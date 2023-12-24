@@ -398,20 +398,21 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/*
-	   dev_dbg(hdspe->card->dev,
-	   "Allocated sample buffer for %s at 0x%08X\n",
-	   substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	   "playback" : "capture",
-	   snd_pcm_sgbuf_get_addr(substream, 0));
-	   */
+	dev_dbg(hdspe->card->dev,
+	"Allocated sample buffer for %s at 0x%08X\n",
+	substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	"playback" : "capture",
+	snd_pcm_sgbuf_get_addr(substream, 0));
+	*/
+
 	/*
-	   dev_dbg(hdspe->card->dev,
-	   "set_hwparams: %s %d Hz, %d channels, bs = %d\n",
-	   substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	   "playback" : "capture",
-	   params_rate(params), params_channels(params),
-	   params_buffer_size(params));
-	   */
+	dev_dbg(hdspe->card->dev,
+	"set_hwparams: %s %d Hz, %d channels, bs = %d\n",
+	substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	"playback" : "capture",
+	params_rate(params), params_channels(params),
+	params_buffer_size(params));
+	*/
 
 	/* Switch to native float format if requested, s32le otherwise. */
 	snd_hdspe_set_float_format(

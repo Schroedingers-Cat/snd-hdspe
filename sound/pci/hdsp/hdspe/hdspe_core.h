@@ -939,8 +939,8 @@ struct hdspe {
 	struct snd_hwdep *hwdep;     /* and a hwdep for additional ioctl */
   
 	/* Only one playback and/or capture stream */
-        struct snd_pcm_substream *capture_substream;
-        struct snd_pcm_substream *playback_substream;
+	struct snd_pcm_substream *capture_substream;
+	struct snd_pcm_substream *playback_substream;
 
 	/* MIDI */
 	struct hdspe_midi midi[HDSPE_MAX_MIDI];
