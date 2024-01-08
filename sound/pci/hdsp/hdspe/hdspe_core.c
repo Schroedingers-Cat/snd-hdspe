@@ -208,7 +208,7 @@ static void hdspe_start_interrupts(struct hdspe* hdspe)
 		hdspe->reg.control.raw |= m->ie;	
 	}
 
-	hdspe->reg.control.common.START =
+	hdspe->reg.control.common.START    = true;
 	hdspe->reg.control.common.IE_AUDIO = true;
 
 	hdspe_write_control(hdspe);
@@ -217,9 +217,10 @@ static void hdspe_start_interrupts(struct hdspe* hdspe)
 static void hdspe_stop_interrupts(struct hdspe* hdspe)
 {
 	/* stop the audio, and cancel all interrupts */
-	hdspe->reg.control.common.START =
+	hdspe->reg.control.common.START    = false;
 	hdspe->reg.control.common.IE_AUDIO = false;
-	hdspe->reg.control.raw &= ~hdspe->midiInterruptEnableMask;
+	hdspe->reg.control.raw            &= ~hdspe->midiInterruptEnableMask;
+
 	hdspe_write_control(hdspe);
 }
 
