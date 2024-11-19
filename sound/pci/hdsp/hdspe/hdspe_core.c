@@ -750,6 +750,8 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* Write restored register values to the hardware */
 	hdspe_write_settings(hdspe);
 	hdspe_write_control(hdspe);
+	hdspe_write_pll_freq(hdspe);
+	// hdspe_set_channel_map(hdspe, hdspe_speed_mode(hdspe));
 
 	/* Resume mixer? hdspe_init_mixer just allocates memory ... */
 
