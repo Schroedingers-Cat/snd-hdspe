@@ -16,6 +16,8 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 
+#include <linux/printk.h>
+
 
 /* the size of a substream (1 mono data stream) */
 #define HDSPE_CHANNEL_BUFFER_SAMPLES  (16*1024)
@@ -163,8 +165,9 @@ static int hdspe_set_interrupt_interval(struct hdspe *hdspe, unsigned int frames
 snd_pcm_uframes_t hdspe_hw_pointer(struct hdspe *hdspe)
 {
 	/* (BUF_PTR << 6) bytes / 4 bytes per sample */
-	return ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4)
-		& (hdspe->hw_buffer_size - 1);
+	snd_pcm_uframes_t pointer = ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4) & (hdspe->hw_buffer_size - 1);
+	// dev_dbg(hdspe->card->dev, "Hardware buffer pointer: %lu\n", pointer);
+    return pointer;
 }
 
 /* Called right from the interrupt handler in order to update the frame
