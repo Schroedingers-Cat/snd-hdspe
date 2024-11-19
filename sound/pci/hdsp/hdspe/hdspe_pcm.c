@@ -524,10 +524,12 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
 	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		running |= 1 << substream->stream;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		running &= ~(1 << substream->stream);
 		break;
 	default:
@@ -541,18 +543,19 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 		other = hdspe->playback_substream;
 
 	if (other) {
+		bool stream_begins = cmd == SNDRV_PCM_TRIGGER_START || cmd == SNDRV_PCM_TRIGGER_RESUME || cmd == SNDRV_PCM_TRIGGER_PAUSE_RELEASE;
 		struct snd_pcm_substream *s;
 		snd_pcm_group_for_each_entry(s, substream) {
 			if (s == other) {
 				snd_pcm_trigger_done(s, substream);
-				if (cmd == SNDRV_PCM_TRIGGER_START || cmd == SNDRV_PCM_TRIGGER_RESUME)
+				if (stream_begins)
 					running |= 1 << s->stream;
 				else
 					running &= ~(1 << s->stream);
 				goto _ok;
 			}
 		}
-		if (cmd == SNDRV_PCM_TRIGGER_START || cmd == SNDRV_PCM_TRIGGER_RESUME) {
+		if (stream_begins) {
 			if (!(running & (1 << SNDRV_PCM_STREAM_PLAYBACK))
 					&& substream->stream ==
 					SNDRV_PCM_STREAM_CAPTURE)
