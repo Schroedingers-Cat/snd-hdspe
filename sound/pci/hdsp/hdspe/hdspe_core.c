@@ -812,6 +812,10 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	hdspe_write_pll_freq(hdspe);
 	// hdspe_set_channel_map(hdspe, hdspe_speed_mode(hdspe));
 
+	/* Set PLL frequency from restored registers */
+	dev_dbg(hdspe->card->dev, "Restoring PLL freq\n");
+	hdspe_write_pll_freq(hdspe);
+
 	/* Resume mixer? hdspe_init_mixer just allocates memory ... */
 
 	/* (5) Restart the chip or hardware */
