@@ -11,3 +11,7 @@ sound/pci/hdsp/hdspe/*.o
 sound/pci/hdsp/hdspe/*.ko
 sound/pci/hdsp/hdspe/*.mod
 sound/pci/hdsp/hdspe/*.mod.c
+
+# IDE files
+.idea/
+.vscode/
