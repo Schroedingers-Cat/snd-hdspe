@@ -508,7 +508,7 @@ static const struct hdspe_tables hdspe_aes_tables = {
 
 	.clock_source_names = hdspe_aes_clock_source_names,
 
-	.supported_power_state = 0x0000
+	.supported_power_state = 0x0100
 };
 
 static struct hdspe_midi hdspe_aes_midi_ports[3] = {

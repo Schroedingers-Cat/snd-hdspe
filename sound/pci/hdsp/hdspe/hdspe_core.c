@@ -733,23 +733,6 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 
 	/* (2) Change ALSA power state */
 	snd_power_change_state(card, hdspe->t.supported_power_state);
-	// Alternatively, do something like this??
-	/*
-	u16 pm_cap;
-	pci_read_config_word(pdev, PCI_PM_CTRL, &pm_cap);
-
-	// Check if the device supports D1 state
-	if (pm_cap & PCI_PM_CAP_D1) 
-	{
-
-	}
-
-	// Check if the device supports D2 state
-	if (pm_cap & PCI_PM_CAP_D2) 
-	{
-
-	}
-	*/
 
 	/* (3) Save register values */
 	/* Save the necessary register values in hdspe struct */
