@@ -523,9 +523,7 @@ static const struct hdspe_tables hdspe_madi_tables = {
 	.port_names_in_qs = texts_ports_madi,
 	.port_names_out_qs = texts_ports_madi,
 
-	.clock_source_names = hdspe_madi_clock_source_names,
-
-	.supported_power_state = (0x0300|0x0000)
+	.clock_source_names = hdspe_madi_clock_source_names
 };
 
 static struct hdspe_midi hdspe_madi_midi_ports[4] = {

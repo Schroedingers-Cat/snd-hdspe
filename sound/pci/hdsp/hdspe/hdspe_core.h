@@ -874,9 +874,6 @@ struct hdspe_tables {
 	unsigned char qs_out_channels;
 
 	const char * const *clock_source_names;
-
-	// The ACPI/PCI power state supported by the model (SNDRV_CTL_POWER_D3hot ...)
-	int supported_power_state;
 };
 
 /* status element ids for status change notification */
