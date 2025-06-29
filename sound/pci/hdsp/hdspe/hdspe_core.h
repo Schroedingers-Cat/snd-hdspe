@@ -874,6 +874,9 @@ struct hdspe_tables {
 	unsigned char qs_out_channels;
 
 	const char * const *clock_source_names;
+
+	// The ACPI/PCI power state supported by the model (SNDRV_CTL_POWER_D3hot ...)
+	int supported_power_state;
 };
 
 /* status element ids for status change notification */
@@ -936,8 +939,8 @@ struct hdspe {
 	struct snd_hwdep *hwdep;     /* and a hwdep for additional ioctl */
   
 	/* Only one playback and/or capture stream */
-        struct snd_pcm_substream *capture_substream;
-        struct snd_pcm_substream *playback_substream;
+	struct snd_pcm_substream *capture_substream;
+	struct snd_pcm_substream *playback_substream;
 
 	/* MIDI */
 	struct hdspe_midi midi[HDSPE_MAX_MIDI];
@@ -1007,6 +1010,9 @@ struct hdspe {
 		__le32                   pll_freq;
 		union hdspe_status0_reg  status0; /* read at every interrupt */
 	} reg;
+
+	// TODO: make it clearer that we actually just save&restore the control and settings registers?
+	struct reg savedRegisters;
 
 	u64 frame_count;            /* current period frame counter */
 	u32 hw_pointer_wrap_count;  /* hw pointer wrapped this many times */

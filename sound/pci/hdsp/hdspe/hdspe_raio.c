@@ -873,7 +873,9 @@ static const struct hdspe_tables hdspe_raydat_tables = {
 	.port_names_in_qs = texts_ports_raydat_qs,
 	.port_names_out_qs = texts_ports_raydat_qs,
 
-	.clock_source_names = hdspe_raydat_clock_source_names
+	.clock_source_names = hdspe_raydat_clock_source_names,
+
+	.supported_power_state = (0x0300|0x0000)
 };
 
 static void hdspe_raydat_init_tables(struct hdspe* hdspe)
@@ -907,7 +909,9 @@ static const struct hdspe_tables hdspe_aio_tables = {
 	.port_names_in_qs = texts_ports_aio_in_qs,
 	.port_names_out_qs = texts_ports_aio_out_qs,
 
-	.clock_source_names = hdspe_aio_clock_source_names
+	.clock_source_names = hdspe_aio_clock_source_names,
+
+	.supported_power_state = (0x0300|0x0000)
 };
 
 static void hdspe_aio_init_tables(struct hdspe* hdspe)

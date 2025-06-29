@@ -15,3 +15,6 @@ sound/pci/hdsp/hdspe/*.mod.c
 # IDE files
 .idea/
 .vscode/
+
+# sym links created by builds
+alsa-hdspe-0.0

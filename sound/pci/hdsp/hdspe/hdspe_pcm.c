@@ -16,6 +16,8 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 
+#include <linux/printk.h>
+
 
 /* the size of a substream (1 mono data stream) */
 #define HDSPE_CHANNEL_BUFFER_SAMPLES  (16*1024)
@@ -163,8 +165,9 @@ static int hdspe_set_interrupt_interval(struct hdspe *hdspe, unsigned int frames
 snd_pcm_uframes_t hdspe_hw_pointer(struct hdspe *hdspe)
 {
 	/* (BUF_PTR << 6) bytes / 4 bytes per sample */
-	return ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4)
-		& (hdspe->hw_buffer_size - 1);
+	snd_pcm_uframes_t pointer = ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4) & (hdspe->hw_buffer_size - 1);
+	// dev_dbg(hdspe->card->dev, "Hardware buffer pointer: %lu\n", pointer);
+    return pointer;
 }
 
 /* Called right from the interrupt handler in order to update the frame
@@ -204,22 +207,6 @@ void hdspe_update_frame_count(struct hdspe* hdspe)
 		last_hw_pointer = hw_pointer;
 	}
 #endif /*DEBUG_FRAME_COUNT*/
-}
-
-static inline void hdspe_start_audio(struct hdspe * s)
-{
-	return;   /* we have audio interrupts enabled all the time */
-	if (s->tco) return;   /* always running with TCO */
-	s->reg.control.common.START = s->reg.control.common.IE_AUDIO = true;
-	hdspe_write_control(s);
-}
-
-static inline void hdspe_stop_audio(struct hdspe * s)
-{
-	return;   /* we leave audio interrupts enabled all the time */	
-	if (s->tco) return;   /* leave always running with TCO */
-	s->reg.control.common.START = s->reg.control.common.IE_AUDIO = false;
-	hdspe_write_control(s);
 }
 
 /* should I silence all or only opened ones ? doit all for first even is 4MB*/
@@ -414,20 +401,21 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	/*
-	   dev_dbg(hdspe->card->dev,
-	   "Allocated sample buffer for %s at 0x%08X\n",
-	   substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	   "playback" : "capture",
-	   snd_pcm_sgbuf_get_addr(substream, 0));
-	   */
+	dev_dbg(hdspe->card->dev,
+	"Allocated sample buffer for %s at 0x%08X\n",
+	substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	"playback" : "capture",
+	snd_pcm_sgbuf_get_addr(substream, 0));
+	*/
+
 	/*
-	   dev_dbg(hdspe->card->dev,
-	   "set_hwparams: %s %d Hz, %d channels, bs = %d\n",
-	   substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
-	   "playback" : "capture",
-	   params_rate(params), params_channels(params),
-	   params_buffer_size(params));
-	   */
+	dev_dbg(hdspe->card->dev,
+	"set_hwparams: %s %d Hz, %d channels, bs = %d\n",
+	substream->stream == SNDRV_PCM_STREAM_PLAYBACK ?
+	"playback" : "capture",
+	params_rate(params), params_channels(params),
+	params_buffer_size(params));
+	*/
 
 	/* Switch to native float format if requested, s32le otherwise. */
 	snd_hdspe_set_float_format(
@@ -534,12 +522,17 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	int running;
 
 	spin_lock(&hdspe->lock);
+	dev_dbg(hdspe->card->dev, "Trigger received with %d\n", cmd);
 	running = hdspe->running;
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	case SNDRV_PCM_TRIGGER_RESUME:
+	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		running |= 1 << substream->stream;
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
+	case SNDRV_PCM_TRIGGER_SUSPEND:
+	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		running &= ~(1 << substream->stream);
 		break;
 	default:
@@ -553,18 +546,19 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 		other = hdspe->playback_substream;
 
 	if (other) {
+		bool stream_begins = cmd == SNDRV_PCM_TRIGGER_START || cmd == SNDRV_PCM_TRIGGER_RESUME || cmd == SNDRV_PCM_TRIGGER_PAUSE_RELEASE;
 		struct snd_pcm_substream *s;
 		snd_pcm_group_for_each_entry(s, substream) {
 			if (s == other) {
 				snd_pcm_trigger_done(s, substream);
-				if (cmd == SNDRV_PCM_TRIGGER_START)
+				if (stream_begins)
 					running |= 1 << s->stream;
 				else
 					running &= ~(1 << s->stream);
 				goto _ok;
 			}
 		}
-		if (cmd == SNDRV_PCM_TRIGGER_START) {
+		if (stream_begins) {
 			if (!(running & (1 << SNDRV_PCM_STREAM_PLAYBACK))
 					&& substream->stream ==
 					SNDRV_PCM_STREAM_CAPTURE)
@@ -580,10 +574,8 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	if (!hdspe->running && running)
-		hdspe_start_audio(hdspe);
-	else if (hdspe->running && !running)
-		hdspe_stop_audio(hdspe);
+	// Since we have audio interrupts enabled all the time, 
+	// no explicit start or stop is necessary
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
 
@@ -602,7 +594,9 @@ static const struct snd_pcm_hardware snd_hdspe_playback_subinfo = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
-		 SNDRV_PCM_INFO_SYNC_START | SNDRV_PCM_INFO_DOUBLE),
+		 SNDRV_PCM_INFO_SYNC_START |
+		 SNDRV_PCM_INFO_RESUME |
+		 SNDRV_PCM_INFO_DOUBLE),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,	
 	.rates = (SNDRV_PCM_RATE_32000 |
@@ -628,7 +622,8 @@ static const struct snd_pcm_hardware snd_hdspe_capture_subinfo = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
-		 SNDRV_PCM_INFO_SYNC_START),
+		 SNDRV_PCM_INFO_SYNC_START | 
+		 SNDRV_PCM_INFO_RESUME),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,
 	.rates = (SNDRV_PCM_RATE_32000 |
@@ -841,15 +836,9 @@ static int snd_hdspe_open(struct snd_pcm_substream *substream)
 		snd_hdspe_capture_subinfo;
 
 	if (playback) {
-		if (!hdspe->capture_substream)
-			hdspe_stop_audio(hdspe);
-
 		hdspe->playback_pid = current->pid;
 		hdspe->playback_substream = substream;
 	} else {
-		if (!hdspe->playback_substream)
-			hdspe_stop_audio(hdspe);
-
 		hdspe->capture_pid = current->pid;
 		hdspe->capture_substream = substream;
 	}
