@@ -11,6 +11,7 @@
 #include "hdspe.h"
 #include "hdspe_core.h"
 
+#include <linux/version.h>
 #include <sound/rawmidi.h>
 
 static inline bool hdspe_midi_is_readwrite(struct hdspe_midi *m)
@@ -200,7 +201,11 @@ snd_hdspe_midi_output_trigger(struct snd_rawmidi_substream *substream, int up)
 		}
 	} else {
 		if (hmidi->istimer && --hmidi->istimer <= 0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+			timer_delete (&hmidi->timer);
+#else
 			del_timer (&hmidi->timer);
+#endif
 	}
 	spin_unlock_irqrestore (&hmidi->lock, flags);
 	if (up)
