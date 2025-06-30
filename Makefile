@@ -10,8 +10,11 @@ PWD     := $(shell pwd)
 
 # Debug options
 
-# TODO: It seems DEBUG is not used. Make sure it's not used implicitly somehow.
-EXTRA_CFLAGS += -DDEBUG
+# Controls debug logging of dev_dbg functions via dmesg
+DEBUG ?= 0
+ifeq ($(DEBUG),1)
+	EXTRA_CFLAGS += -DDEBUG
+endif
 
 # Controls debug information via /proc interface
 CONFIG_SND_DEBUG ?= 0
@@ -54,7 +57,7 @@ show-controls: list-controls
 	less asound.state
 
 debug:
-	$(MAKE) CONFIG_SND_DEBUG=1
+	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1
 
 # TODO: It seems several errors are logged using dev_info, which is not logged by default.
 # TODO: This makefile option changes kernel settings. We should not do that and instead put that info into the README.md
