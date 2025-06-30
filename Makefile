@@ -59,9 +59,5 @@ show-controls: list-controls
 debug:
 	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1
 
-# TODO: This makefile option changes kernel settings. We should not do that and instead put that info into the README.md
-enable-debug-log:
-	echo 8 > /proc/sys/kernel/printk
-
 depend:
 	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps

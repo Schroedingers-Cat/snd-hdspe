@@ -50,15 +50,7 @@ When manually inserting a non-signed kernel module like this, you may need to di
 See below for how to install the kernel module using DKMS. Installing with DKMS
 is preferred if you plan to use this module on a regular basis instead of just
 testing it once.
-    
-- In case you would love or need to see the debug messages spit out by the snd-hdspe.ko module, enable debug log output:
 
-      sudo echo 8 > /proc/sys/kernel/printk
-
-or
-
-      sudo make enable-debug-log
-    
 - Removing the snd-hdspe.ko driver and re-installing the default snd-hdspm driver:
 
       sudo -s 
@@ -112,7 +104,28 @@ assists module signing for secure boot.
 or
 
         make uninstall
-      
+
+**Debugging**  
+
+In case you want to see debug messages from the snd-hdspe.ko module, you'll have to compile the driver with debug flags and enable debug logging in the kernel.  
+First, compile the driver with the debug flags:
+
+      make clean
+      make debug
+
+Then, install/reinstall the driver. This will enable debug messages via `/proc` like `/proc/asound/{devicename}/debug`.
+
+To enable debug logging in the kernel via `dmesg`:
+
+    sudo -i
+    # run as root
+    sudo echo 8 > /proc/sys/kernel/printk
+
+or
+
+    echo 8 | sudo tee /proc/sys/kernel/printk
+
+The changes will take effect immediately and default back after a reboot.
 
 **Documentation**
 
