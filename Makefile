@@ -59,7 +59,6 @@ show-controls: list-controls
 debug:
 	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1
 
-# TODO: It seems several errors are logged using dev_info, which is not logged by default.
 # TODO: This makefile option changes kernel settings. We should not do that and instead put that info into the README.md
 enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk

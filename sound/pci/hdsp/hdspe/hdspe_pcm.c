@@ -343,7 +343,7 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 	spin_lock_irq(&hdspe->lock);
 	err = hdspe_set_sample_rate(hdspe, params_rate(params));
 	if (err < 0) {
-		dev_info(hdspe->card->dev, "err on hdspe_set_rate: %d\n", err);
+		dev_err(hdspe->card->dev, "error on hdspe_set_rate: %d\n", err);
 		spin_unlock_irq(&hdspe->lock);
 		_snd_pcm_hw_param_setempty(params,
 				SNDRV_PCM_HW_PARAM_RATE);
@@ -354,8 +354,8 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 	err = hdspe_set_interrupt_interval(hdspe,
 			params_period_size(params));
 	if (err < 0) {
-		dev_info(hdspe->card->dev,
-			 "err on hdspe_set_interrupt_interval: %d\n", err);
+		dev_err(hdspe->card->dev,
+			"error on hdspe_set_interrupt_interval: %d\n", err);
 		_snd_pcm_hw_param_setempty(params,
 				SNDRV_PCM_HW_PARAM_PERIOD_SIZE);
 		return err;
@@ -371,8 +371,8 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 	err =
 		snd_pcm_lib_malloc_pages(substream, HDSPE_DMA_AREA_BYTES);
 	if (err < 0) {
-		dev_info(hdspe->card->dev,
-			 "err on snd_pcm_lib_malloc_pages: %d\n", err);
+		dev_err(hdspe->card->dev,
+			"err on snd_pcm_lib_malloc_pages: %d\n", err);
 		return err;
 	}
 
