@@ -7,7 +7,17 @@ endif
 
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
-EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
+
+# Debug options
+
+# TODO: It seems DEBUG is not used. Make sure it's not used implicitly somehow.
+EXTRA_CFLAGS += -DDEBUG
+
+# Controls debug information via /proc interface
+CONFIG_SND_DEBUG ?= 0
+ifeq ($(CONFIG_SND_DEBUG),1)
+  EXTRA_CFLAGS += -DCONFIG_SND_DEBUG
+endif
 
 # Force to build the module as loadable kernel module.
 # Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
