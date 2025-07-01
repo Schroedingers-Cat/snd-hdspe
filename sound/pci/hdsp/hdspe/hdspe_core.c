@@ -718,13 +718,13 @@ static void print_registers(struct hdspe *hdspe)
 	dev_dbg(hdspe->card->dev, "status0 Register madi_sync: %d\n", hdspe->reg.status0.madi.madi_sync);
 	dev_dbg(hdspe->card->dev, "status0 Register madi_freq: %d\n", hdspe->reg.status0.madi.madi_freq);
 
-	dev_dbg(hdspe->card->dev, "Saved registers have the following states: Control: %x Settings: %x pll_freq: %x status0: %x\n", hdspe->savedRegisters.control.raw, hdspe->savedRegisters.settings.raw, hdspe->savedRegisters.pll_freq, hdspe->savedRegisters.status0.raw);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Start: %d\n", hdspe->savedRegisters.control.common.START);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Freq: %d in DS: %d or QS: %d\n", hdspe->savedRegisters.control.common.freq, hdspe->savedRegisters.control.common.ds, hdspe->savedRegisters.control.common.qs);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Clock Mode: %d\n", hdspe->savedRegisters.control.madi.Master);
-	dev_dbg(hdspe->card->dev, "Saved Control Register tx_64ch: %d\n", hdspe->savedRegisters.control.madi.tx_64ch);
-	dev_dbg(hdspe->card->dev, "Saved Control Register AutoInput: %d\n", hdspe->savedRegisters.control.madi.AutoInp);
-	dev_dbg(hdspe->card->dev, "Saved Control Register SyncRef: %d\n", hdspe->savedRegisters.control.madi.SyncRef);
+	dev_dbg(hdspe->card->dev, "Saved registers have the following states: Control: %x Settings: %x pll_freq: %x status0: %x\n", hdspe->suspendStateRegs.control.raw, hdspe->suspendStateRegs.settings.raw, hdspe->suspendStateRegs.pll_freq, hdspe->suspendStateRegs.status0.raw);
+	dev_dbg(hdspe->card->dev, "Saved Control Register Start: %d\n", hdspe->suspendStateRegs.control.common.START);
+	dev_dbg(hdspe->card->dev, "Saved Control Register Freq: %d in DS: %d or QS: %d\n", hdspe->suspendStateRegs.control.common.freq, hdspe->suspendStateRegs.control.common.ds, hdspe->suspendStateRegs.control.common.qs);
+	dev_dbg(hdspe->card->dev, "Saved Control Register Clock Mode: %d\n", hdspe->suspendStateRegs.control.madi.Master);
+	dev_dbg(hdspe->card->dev, "Saved Control Register tx_64ch: %d\n", hdspe->suspendStateRegs.control.madi.tx_64ch);
+	dev_dbg(hdspe->card->dev, "Saved Control Register AutoInput: %d\n", hdspe->suspendStateRegs.control.madi.AutoInp);
+	dev_dbg(hdspe->card->dev, "Saved Control Register SyncRef: %d\n", hdspe->suspendStateRegs.control.madi.SyncRef);
 }
 
 static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t state)
@@ -748,8 +748,8 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	/* (3) Save register values */
 	/* Save the necessary register values in hdspe struct */
 	spin_lock_irq(&hdspe->lock);
-	// without savedRegisters, it's 104e9 vs 104c8 for the control register -> because of the interrupts (START & IE_AUDIO)
-	hdspe->savedRegisters = hdspe->reg;
+	// without suspendStateRegs, it's 104e9 vs 104c8 for the control register -> because of the interrupts (START & IE_AUDIO)
+	hdspe->suspendStateRegs = hdspe->reg;
 	// print_registers(hdspe);
 	spin_unlock_irq(&hdspe->lock);
 
@@ -795,7 +795,7 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* (3) Restore saved register values */
 	/* Restore the register values saved during suspend */
 	spin_lock_irq(&hdspe->lock);
-	hdspe->reg = hdspe->savedRegisters;
+	hdspe->reg = hdspe->suspendStateRegs;
 	// print_registers(hdspe);
 	spin_unlock_irq(&hdspe->lock);
 
@@ -809,7 +809,7 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* Restart any halted hardware or operations */
 	// Technically, this redundantly sets START and IE_AUDIO in 
 	// reg.control.common to true, which already happened via 
-	// hdspe->savedRegisters
+	// hdspe->suspendStateRegs
 	hdspe_start_interrupts(hdspe);
 
 	/* (6) Return ALSA to full power state */

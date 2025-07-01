@@ -1009,7 +1009,7 @@ struct hdspe {
 	} reg;
 
 	// TODO: make it clearer that we actually just save&restore the control and settings registers?
-	struct reg savedRegisters;
+	struct reg suspendStateRegs;
 
 	u64 frame_count;            /* current period frame counter */
 	u32 hw_pointer_wrap_count;  /* hw pointer wrapped this many times */
