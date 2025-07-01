@@ -108,9 +108,11 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 {
 	struct hdspe *hdspe = (struct hdspe *) dev_id;
 	int i, audio, midi, schedule = 0;
-	// if (hdspe->irq_count % 1000 == 0) {
-	// 	dev_dbg(hdspe->card->dev, "Interrupt #%d received\n", hdspe->irq_count);
-	// }
+	#ifdef TIME_INTERRUPT_INTERVAL
+	if (hdspe->irq_count % 1000 == 0) {
+		dev_dbg(hdspe->card->dev, "Interrupt #%d received\n", hdspe->irq_count);
+	}
+	#endif /*TIME_INTERRUPT_INTERVAL*/
 
 	hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
 
@@ -137,9 +139,11 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 		return IRQ_NONE;
 
 	if (audio) {
-		// if (hdspe->irq_count % 1000 == 0) {
-		// 	dev_dbg(hdspe->card->dev, "Audio interrupt \n");
-		// }
+		#ifdef TIME_INTERRUPT_INTERVAL
+		if (hdspe->irq_count % 1000 == 0) {
+			dev_dbg(hdspe->card->dev, "Audio interrupt \n");
+		}
+		#endif /*TIME_INTERRUPT_INTERVAL*/
 
 		hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
 		hdspe->irq_count++;
@@ -155,19 +159,24 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 		if (hdspe->capture_substream)
 		{
 			snd_pcm_period_elapsed(hdspe->capture_substream);
-			// if (hdspe->capture_buffer && hdspe->irq_count % 1000 == 0)
-			// {
-			//     dev_dbg(hdspe->card->dev, "Capture Buffer %d \n", *hdspe->capture_buffer);
-			// }
+			#ifdef TIME_INTERRUPT_INTERVAL
+			if (hdspe->capture_buffer && hdspe->irq_count % 1000 == 0)
+			{
+			    dev_dbg(hdspe->card->dev, "Capture Buffer %d \n", *hdspe->capture_buffer);
+			}
+			#endif /*TIME_INTERRUPT_INTERVAL*/
+
 		}
 
 		if (hdspe->playback_substream)
 		{
 			snd_pcm_period_elapsed(hdspe->playback_substream);
-			// if (hdspe->playback_buffer && hdspe->irq_count % 1000 == 0)
-			// {
-			// 	dev_dbg(hdspe->card->dev, "Playback Buffer %d \n", *hdspe->playback_buffer);
-			// }
+			#ifdef TIME_INTERRUPT_INTERVAL
+			if (hdspe->playback_buffer && hdspe->irq_count % 1000 == 0)
+			{
+				dev_dbg(hdspe->card->dev, "Playback Buffer %d \n", *hdspe->playback_buffer);
+			}
+			#endif /*TIME_INTERRUPT_INTERVAL*/
 		}
 
 		/* status polling at user controlled rate */
@@ -180,9 +189,11 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 	}
 
 	if (midi) {
+		#ifdef TIME_INTERRUPT_INTERVAL
 		if (hdspe->irq_count % 1000 == 0) {
 			dev_dbg(hdspe->card->dev, "MIDI interrupt \n");
 		}
+		#endif /*TIME_INTERRUPT_INTERVAL*/
 
 		schedule = 0;
 		for (i = 0; i < hdspe->midiPorts; i++) {
