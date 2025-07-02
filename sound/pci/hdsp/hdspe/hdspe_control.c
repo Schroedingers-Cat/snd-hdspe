@@ -78,7 +78,7 @@ void hdspe_init_autosync_tables(struct hdspe* hdspe,
 	}
 }
 
-const char* const hdspe_clock_source_name(struct hdspe* hdspe, int i)
+const char* hdspe_clock_source_name(struct hdspe* hdspe, int i)
 {
 	return (i >= 0 && i < HDSPE_CLOCK_SOURCE_COUNT)
 		? hdspe->t.clock_source_names[i] : "???";
@@ -374,7 +374,7 @@ static const char *const texts_freq[HDSPE_FREQ_COUNT] = {
 	HDSPE_FREQ_NAME(HDSPE_FREQ_192KHZ)
 };
 
-const char* const hdspe_freq_name(enum hdspe_freq i)
+const char* hdspe_freq_name(enum hdspe_freq i)
 {
 	return (i >= 0 && i < HDSPE_FREQ_COUNT)
 		? texts_freq[i] : "???";
