@@ -692,41 +692,6 @@ static void snd_hdspe_remove(struct pci_dev *pci)
 	snd_card_free(pci_get_drvdata(pci));
 }
 
-static void print_registers(struct hdspe *hdspe)
-{
-	dev_dbg(hdspe->card->dev, "Registers have the following states: Control: %x Settings: %x pll_freq: %x status0: %x\n", hdspe->reg.control.raw, hdspe->reg.settings.raw, hdspe->reg.pll_freq, hdspe->reg.status0.raw);
-	dev_dbg(hdspe->card->dev, "Control Register Start: %d\n", hdspe->reg.control.common.START);
-	dev_dbg(hdspe->card->dev, "Control Register Freq: %d in DS: %d or QS: %d\n", hdspe->reg.control.common.freq, hdspe->reg.control.common.ds, hdspe->reg.control.common.qs);
-	dev_dbg(hdspe->card->dev, "Control Register Clock Mode: %d\n", hdspe->reg.control.madi.Master);
-	dev_dbg(hdspe->card->dev, "Control Register tx_64ch: %d\n", hdspe->reg.control.madi.tx_64ch);
-	dev_dbg(hdspe->card->dev, "Control Register AutoInput: %d\n", hdspe->reg.control.madi.AutoInp);
-	dev_dbg(hdspe->card->dev, "Control Register SyncRef: %d\n", hdspe->reg.control.madi.SyncRef);
-	dev_dbg(hdspe->card->dev, "Settings Register Master: %d\n", hdspe->reg.settings.raio.Master);
-	dev_dbg(hdspe->card->dev, "Settings Register SyncRef: %d\n", hdspe->reg.settings.raio.SyncRef);
-	dev_dbg(hdspe->card->dev, "Settings Register DS_DoubleWire: %d\n", hdspe->reg.settings.raio.DS_DoubleWire);
-	dev_dbg(hdspe->card->dev, "Settings Register QS_DoubleWire: %d\n", hdspe->reg.settings.raio.QS_DoubleWire);
-	dev_dbg(hdspe->card->dev, "Settings Register QS_QuadWire: %d\n", hdspe->reg.settings.raio.QS_QuadWire);
-	dev_dbg(hdspe->card->dev, "Settings Register Madi_64_Channels: %d\n", hdspe->reg.settings.raio.Madi_64_Channels);
-	dev_dbg(hdspe->card->dev, "Settings Register Madi_AutoInput: %d\n", hdspe->reg.settings.raio.Madi_AutoInput);
-	dev_dbg(hdspe->card->dev, "Settings Register Input: %d\n", hdspe->reg.settings.raio.Input);
-	dev_dbg(hdspe->card->dev, "Settings Register Input: %d\n", hdspe->reg.settings.raio.Input);
-	dev_dbg(hdspe->card->dev, "status0 Register rx_64ch: %d\n", hdspe->reg.status0.madi.rx_64ch);
-	dev_dbg(hdspe->card->dev, "status0 Register AB_int: %d\n", hdspe->reg.status0.madi.AB_int);
-	dev_dbg(hdspe->card->dev, "status0 Register madi_lock: %d\n", hdspe->reg.status0.madi.madi_lock);
-	dev_dbg(hdspe->card->dev, "status0 Register sync_in_lock: %d\n", hdspe->reg.status0.madi.sync_in_lock);
-	dev_dbg(hdspe->card->dev, "status0 Register sync_in_sync: %d\n", hdspe->reg.status0.madi.sync_in_sync);
-	dev_dbg(hdspe->card->dev, "status0 Register madi_sync: %d\n", hdspe->reg.status0.madi.madi_sync);
-	dev_dbg(hdspe->card->dev, "status0 Register madi_freq: %d\n", hdspe->reg.status0.madi.madi_freq);
-
-	dev_dbg(hdspe->card->dev, "Saved registers have the following states: Control: %x Settings: %x pll_freq: %x status0: %x\n", hdspe->suspendStateRegs.control.raw, hdspe->suspendStateRegs.settings.raw, hdspe->suspendStateRegs.pll_freq, hdspe->suspendStateRegs.status0.raw);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Start: %d\n", hdspe->suspendStateRegs.control.common.START);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Freq: %d in DS: %d or QS: %d\n", hdspe->suspendStateRegs.control.common.freq, hdspe->suspendStateRegs.control.common.ds, hdspe->suspendStateRegs.control.common.qs);
-	dev_dbg(hdspe->card->dev, "Saved Control Register Clock Mode: %d\n", hdspe->suspendStateRegs.control.madi.Master);
-	dev_dbg(hdspe->card->dev, "Saved Control Register tx_64ch: %d\n", hdspe->suspendStateRegs.control.madi.tx_64ch);
-	dev_dbg(hdspe->card->dev, "Saved Control Register AutoInput: %d\n", hdspe->suspendStateRegs.control.madi.AutoInp);
-	dev_dbg(hdspe->card->dev, "Saved Control Register SyncRef: %d\n", hdspe->suspendStateRegs.control.madi.SyncRef);
-}
-
 static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t state)
 {
 	/* (1) Accessing HDSPe data */
@@ -750,7 +715,6 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	spin_lock_irq(&hdspe->lock);
 	// without suspendStateRegs, it's 104e9 vs 104c8 for the control register -> because of the interrupts (START & IE_AUDIO)
 	hdspe->suspendStateRegs = hdspe->reg;
-	// print_registers(hdspe);
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Stop hardware operations */
@@ -796,7 +760,6 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* Restore the register values saved during suspend */
 	spin_lock_irq(&hdspe->lock);
 	hdspe->reg = hdspe->suspendStateRegs;
-	// print_registers(hdspe);
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Update hardware with restored register values */
