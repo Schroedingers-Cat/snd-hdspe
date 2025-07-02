@@ -166,7 +166,6 @@ snd_pcm_uframes_t hdspe_hw_pointer(struct hdspe *hdspe)
 {
 	/* (BUF_PTR << 6) bytes / 4 bytes per sample */
 	snd_pcm_uframes_t pointer = ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4) & (hdspe->hw_buffer_size - 1);
-	// dev_dbg(hdspe->card->dev, "Hardware buffer pointer: %lu\n", pointer);
     return pointer;
 }
 
