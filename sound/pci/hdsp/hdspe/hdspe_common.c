@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_common.c
  * @brief RME HDSPe cards common driver methods.
  *

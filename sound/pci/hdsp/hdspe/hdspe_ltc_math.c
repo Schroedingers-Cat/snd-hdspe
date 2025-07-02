@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_ltc_math.c
  * @brief RME HDSPe 32-bit LTC code optimised math for TCO module.
  *

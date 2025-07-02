@@ -82,7 +82,7 @@ static inline void snd_hdspe_enable_out(struct hdspe * hdspe, int i, int v)
 
 /* ------------------------------------------------------- */
 
-/**
+/*
  * Returns true if the card is a RayDAT / AIO / AIO Pro 
  */
 static inline bool hdspe_is_raydat_or_aio(struct hdspe *hdspe)

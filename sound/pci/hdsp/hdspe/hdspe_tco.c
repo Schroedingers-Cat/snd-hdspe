@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe-tco.c
  * @brief RME HDSPe Time Code Option driver status and control interface.
  *
@@ -23,7 +23,7 @@
 #define LTC_TIMER_FREQ 100
 #endif /*DEBUG_LTC*/
 
-/**
+/*
  * TCO register definitions:
  *
  * TCO0 : contains time code. Status (at HDSPE_RD_TCO byte offset): report

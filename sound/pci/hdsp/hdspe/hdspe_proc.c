@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_proc.c
  * @brief RME HDSPe driver proc interface.
  *

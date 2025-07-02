@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe-control.c
  * @brief RME HDSPe sound card driver status and control interface.
  *
@@ -16,7 +16,7 @@
 #include "hdspe_core.h"
 #include "hdspe_control.h"
 
-/**
+/*
  * hdspe_init_autosync_tables: calculates tables needed for the 
  * preferred sync and autosync ref properties below, given the list of 
  * autosync clock sources for a card:
