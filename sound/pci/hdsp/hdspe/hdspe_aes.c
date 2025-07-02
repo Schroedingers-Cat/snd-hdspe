@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_aes.c
  * @brief RME HDSPe AES driver methods.
  *

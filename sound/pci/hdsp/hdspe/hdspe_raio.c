@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_raio.c
  * @brief RME HDSPe RayDAT / AIO / AIO Pro driver methods.
  *

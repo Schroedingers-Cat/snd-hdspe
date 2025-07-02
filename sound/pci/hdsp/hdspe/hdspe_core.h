@@ -1267,9 +1267,9 @@ extern void hdspe_tco_set_app_sample_rate(struct hdspe* hdspe);
  */
 
 /* Get name of the clock source */
-extern const char* const hdspe_clock_source_name(struct hdspe* hdspe, int i);
+extern const char* hdspe_clock_source_name(struct hdspe* hdspe, int i);
 /* Get name of the frequency class */
-extern const char* const hdspe_freq_name(enum hdspe_freq f);
+extern const char* hdspe_freq_name(enum hdspe_freq f);
 /* Get frequency class frame rate */
 extern u32 hdspe_freq_sample_rate(enum hdspe_freq f);
 /* Get the frequency class best representing the given rate */
