@@ -7,7 +7,20 @@ endif
 
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
-EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
+
+# Debug options
+
+# Controls debug logging of dev_dbg functions via dmesg
+DEBUG ?= 0
+ifeq ($(DEBUG),1)
+	EXTRA_CFLAGS += -DDEBUG
+endif
+
+# Controls debug information via /proc interface
+CONFIG_SND_DEBUG ?= 0
+ifeq ($(CONFIG_SND_DEBUG),1)
+  EXTRA_CFLAGS += -DCONFIG_SND_DEBUG
+endif
 
 # Force to build the module as loadable kernel module.
 # Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
@@ -43,8 +56,8 @@ list-controls:
 show-controls: list-controls
 	less asound.state
 
-enable-debug-log:
-	echo 8 > /proc/sys/kernel/printk
+debug:
+	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1
 
 depend:
 	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps
