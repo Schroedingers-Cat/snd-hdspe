@@ -1008,7 +1008,6 @@ struct hdspe {
 		union hdspe_status0_reg  status0; /* read at every interrupt */
 	} reg;
 
-	// TODO: make it clearer that we actually just save&restore the control and settings registers?
 	struct reg suspendStateRegs;
 
 	u64 frame_count;            /* current period frame counter */
