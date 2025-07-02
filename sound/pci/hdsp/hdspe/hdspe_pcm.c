@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/**
+/*
  * hdspe_pcm.c
  * @brief RME HDSPe PCM interface.
  *
