@@ -105,7 +105,7 @@ assists module signing for secure boot.
 
   This will:
   1. Build the module
-  2. Create a symbolic link from the repo's root to /usr/src/alsa-hdspe-${PackageVersion}
+  2. Copy all relevant files to /usr/src/alsa-hdspe-${PackageVersion}
   3. Install the module with DKMS
 
 - For uninstalling, run:
