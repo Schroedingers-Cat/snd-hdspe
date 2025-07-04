@@ -1,6 +1,6 @@
 # Package information for DKMS
 PACKAGE_NAME := alsa-hdspe
-PACKAGE_VERSION := 0.0
+PACKAGE_VERSION := 1.0.1
 DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 # The runtime of DKMS has this environment variable to build for several versions of Linux kernel.
