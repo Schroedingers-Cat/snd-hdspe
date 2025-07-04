@@ -99,26 +99,20 @@ assists module signing for secure boot.
 
         sudo apt install dkms
 
-- For preparation, execute cd to your clone copy folder, then type
+- For installing, simply run:
 
-        sudo ln -s $(pwd) /usr/src/alsa-hdspe-0.0
+        sudo make install
 
-- For installing, type
+  This will:
+  1. Build the module
+  2. Create a symbolic link from the repo's root to /usr/src/alsa-hdspe-${PackageVersion}
+  3. Install the module with DKMS
 
-        sudo dkms install alsa-hdspe/0.0
+- For uninstalling, run:
 
-- For uninstalling, type
+        sudo make uninstall
 
-        sudo dkms remove alsa-hdspe/0.0
-
-- Or simply:
-
-        make install
-
-or
-
-        make uninstall
-      
+  This will remove the DKMS module and clean up the symbolic link.
 
 **Documentation**
 

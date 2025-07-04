@@ -5,6 +5,7 @@
 deps
 modules.order
 Module.symvers
+dkms.conf
 
 *.cmd
 .module-common.o
@@ -16,3 +17,6 @@ sound/pci/hdsp/hdspe/*.mod.c
 # IDE files
 .idea/
 .vscode/
+
+# sym links created by builds
+alsa-hdspe-\d+\.\d+(\.\d+)?
