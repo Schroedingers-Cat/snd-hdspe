@@ -7,6 +7,7 @@ modules.order
 Module.symvers
 
 *.cmd
+.module-common.o
 sound/pci/hdsp/hdspe/*.o
 sound/pci/hdsp/hdspe/*.ko
 sound/pci/hdsp/hdspe/*.mod
