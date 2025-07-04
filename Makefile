@@ -40,7 +40,9 @@ remove:
 
 install: default
 	-rmmod snd-hdspm
-	-ln -s $(pwd) /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
+	-rm -rf $(DKMS_PATH)
+	mkdir -p $(DKMS_PATH)
+	cp -r Makefile dkms.conf* deps sound $(DKMS_PATH)/
 	dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
 
 uninstall:
