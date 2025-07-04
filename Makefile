@@ -18,6 +18,9 @@ export CONFIG_SND_HDSPE=m
 default: depend
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
 
+depend: dkms.conf
+	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps
+
 dkms.conf: dkms.conf.in
 	sed -e "s/@PACKAGE_NAME@/$(PACKAGE_NAME)/g" \
 	    -e "s/@PACKAGE_VERSION@/$(PACKAGE_VERSION)/g" \
@@ -52,9 +55,6 @@ show-controls: list-controls
 
 enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk
-
-depend: dkms.conf
-	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps
 else
 # Kernel build
 obj-$(CONFIG_SND_HDSPE) += sound/pci/hdsp/hdspe/
