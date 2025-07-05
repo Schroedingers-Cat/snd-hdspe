@@ -46,7 +46,18 @@ install: default
 	dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
 
 uninstall:
-	dkms remove $(PACKAGE_NAME)/$(PACKAGE_VERSION) --all
+	@versions=$$(dkms status -m $(PACKAGE_NAME) \
+	    | grep -E ",\s*$(KERNELRELEASE),.*installed$$" \
+	    | grep -Po "^$(PACKAGE_NAME)/\K[^,]+"); \
+	if [ -z "$$versions" ]; then \
+	  echo "No $(PACKAGE_NAME) installed for kernel $(KERNELRELEASE)."; \
+	else \
+	  for ver in $$versions; do \
+	    echo "Removing $(PACKAGE_NAME)/$$ver from kernel $(KERNELRELEASE)…"; \
+	    sudo dkms remove $(PACKAGE_NAME)/$$ver -k $(KERNELRELEASE); \
+	    sudo rm -rf "/usr/src/$(PACKAGE_NAME)-$$ver"; \
+	  done; \
+	fi
 
 list-controls:
 	-rm asound.state
