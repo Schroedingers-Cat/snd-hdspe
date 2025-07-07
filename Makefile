@@ -27,14 +27,13 @@ ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
 # The runtime of DKMS has this environment variable to build for several versions of Linux kernel.
 ifndef KERNELRELEASE
-# Normal build
+# Out-of-tree build
 KERNELRELEASE := $(shell uname -r)
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
 EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
 
-# Force to build the module as loadable kernel module.
-# Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
+# Force to build the module as loadable kernel module for out-of-tree builds
 export CONFIG_SND_HDSPE=m
 
 default: depend
@@ -90,4 +89,13 @@ enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk
 else
 # Kernel build (in-tree or DKMS using the kbuild system)
+
+# For in-tree builds, CONFIG_SND_HDSPE will be controlled by sound/pci/Kconfig
+ifneq ($(CONFIG_SND_HDSPE),)
+  # handle this via Kconfig
+else
+  # For DKMS builds using the kbuild system directly, we need to set this explicitly
+  export CONFIG_SND_HDSPE=m
+endif
+
 endif
