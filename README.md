@@ -105,14 +105,14 @@ assists module signing for secure boot.
 
   This will:
   1. Build the module
-  2. Copy all relevant files to /usr/src/alsa-hdspe-${PackageVersion}
+  2. Copy all relevant files to /usr/src/snd-hdspe-${PackageVersion}
   3. Install the module with DKMS
 
 - For uninstalling, run:
 
         sudo make uninstall
 
-  This will remove the DKMS module and clean up the symbolic link.
+  This will remove the currently installed snd-hdspe module using DKMS as well as the source files copied to `/usr/src` from the `install` target.
 
 **Documentation**
 
