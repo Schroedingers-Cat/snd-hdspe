@@ -66,7 +66,7 @@ install: default
 
 uninstall:
 	@versions=$$(dkms status -m $(PACKAGE_NAME) \
-	    | grep -E ",\s*$(KERNELRELEASE),.*installed$$" \
+	    | grep -E ",\s*$(KERNELRELEASE),.*installed" \
 	    | grep -Po "^$(PACKAGE_NAME)/\K[^,]+"); \
 	if [ -z "$$versions" ]; then \
 	  echo "No $(PACKAGE_NAME) installed for kernel $(KERNELRELEASE)."; \
