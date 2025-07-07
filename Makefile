@@ -1,7 +1,29 @@
 # Package information for DKMS
-PACKAGE_NAME := alsa-hdspe
+PACKAGE_NAME := snd-hdspe
 PACKAGE_VERSION := 1.0.1
 DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
+
+# Main module definition - works for both in-tree and out-of-tree builds
+obj-$(CONFIG_SND_HDSPE) += $(PACKAGE_NAME).o
+
+# List all object files explicitly for better DKMS compatibility
+$(PACKAGE_NAME)-y := \
+	sound/pci/hdsp/hdspe/hdspe_core.o \
+	sound/pci/hdsp/hdspe/hdspe_common.o \
+	sound/pci/hdsp/hdspe/hdspe_control.o \
+	sound/pci/hdsp/hdspe/hdspe_hwdep.o \
+	sound/pci/hdsp/hdspe/hdspe_mixer.o \
+	sound/pci/hdsp/hdspe/hdspe_pcm.o \
+	sound/pci/hdsp/hdspe/hdspe_proc.o \
+	sound/pci/hdsp/hdspe/hdspe_madi.o \
+	sound/pci/hdsp/hdspe/hdspe_aes.o \
+	sound/pci/hdsp/hdspe/hdspe_raio.o \
+	sound/pci/hdsp/hdspe/hdspe_midi.o \
+	sound/pci/hdsp/hdspe/hdspe_tco.o \
+	sound/pci/hdsp/hdspe/hdspe_ltc_math.o
+
+# Add include path for header files
+ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
 # The runtime of DKMS has this environment variable to build for several versions of Linux kernel.
 ifndef KERNELRELEASE
@@ -19,7 +41,6 @@ default: depend
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
 
 depend: dkms.conf
-	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps
 
 dkms.conf: dkms.conf.in
 	sed -e "s/@PACKAGE_NAME@/$(PACKAGE_NAME)/g" \
@@ -29,20 +50,19 @@ dkms.conf: dkms.conf.in
 clean:
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) clean
 	-rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
-	-touch deps
 
 insert: default
 	-rmmod snd-hdspm
-	insmod sound/pci/hdsp/hdspe/snd-hdspe.ko
+	insmod $(PACKAGE_NAME).ko
 
 remove:
-	rmmod snd-hdspe
+	rmmod $(PACKAGE_NAME)
 
 install: default
 	-rmmod snd-hdspm
 	-rm -rf $(DKMS_PATH)
 	mkdir -p $(DKMS_PATH)
-	cp -r Makefile dkms.conf* deps sound $(DKMS_PATH)/
+	cp -r Makefile dkms.conf* sound $(DKMS_PATH)/
 	dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
 
 uninstall:
@@ -69,6 +89,5 @@ show-controls: list-controls
 enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk
 else
-# Kernel build
-obj-$(CONFIG_SND_HDSPE) += sound/pci/hdsp/hdspe/
+# Kernel build (in-tree or DKMS using the kbuild system)
 endif

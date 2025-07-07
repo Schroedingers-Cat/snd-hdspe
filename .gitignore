@@ -9,10 +9,10 @@ dkms.conf
 
 *.cmd
 .module-common.o
-sound/pci/hdsp/hdspe/*.o
-sound/pci/hdsp/hdspe/*.ko
-sound/pci/hdsp/hdspe/*.mod
-sound/pci/hdsp/hdspe/*.mod.c
+*.o
+*.ko
+*.mod
+*.mod.c
 
 # IDE files
 .idea/
