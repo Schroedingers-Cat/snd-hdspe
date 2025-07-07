@@ -25,7 +25,7 @@ $(PACKAGE_NAME)-y := \
 # Add include path for header files
 ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
-# The runtime of DKMS has this environment variable to build for several versions of Linux kernel.
+# DKMS sets this environment variable to build for several versions of Linux kernel
 ifndef KERNELRELEASE
 # Out-of-tree build
 KERNELRELEASE := $(shell uname -r)
@@ -88,13 +88,13 @@ show-controls: list-controls
 enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk
 else
-# Kernel build (in-tree or DKMS using the kbuild system)
+# Kernel build (in-tree or DKMS using kbuild)
 
 # For in-tree builds, CONFIG_SND_HDSPE will be controlled by sound/pci/Kconfig
 ifneq ($(CONFIG_SND_HDSPE),)
   # handle this via Kconfig
 else
-  # For DKMS builds using the kbuild system directly, we need to set this explicitly
+  # For DKMS builds using kbuild directly, we need to set this explicitly
   export CONFIG_SND_HDSPE=m
 endif
 
