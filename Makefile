@@ -1,4 +1,4 @@
-# Package information for DKMS
+# Module metadata
 PACKAGE_NAME := snd-hdspe
 PACKAGE_VERSION := 1.0.1
 DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
