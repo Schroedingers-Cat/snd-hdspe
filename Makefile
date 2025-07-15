@@ -64,10 +64,10 @@ DKMS_SRC_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 install: all remove-mainlined
 	@echo "Installing module into DKMS tree for manual use..."
-	-rm -rf $(DKMS_SRC_PATH)
-	mkdir -p $(DKMS_SRC_PATH)
-	cp -r Makefile dkms.conf* sound $(DKMS_SRC_PATH)/
-	dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
+	-sudo rm -rf $(DKMS_SRC_PATH)
+	sudo mkdir -p $(DKMS_SRC_PATH)
+	sudo cp -r Makefile dkms.conf* sound $(DKMS_SRC_PATH)/
+	sudo dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
 
 uninstall:
 	@echo "Removing module from DKMS tree..."
