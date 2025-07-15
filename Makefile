@@ -8,19 +8,12 @@ endif
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
 
-# Debug options
-
-# Controls debug logging of dev_dbg functions via dmesg
+# Debug and warning flags
 DEBUG ?= 0
-ifeq ($(DEBUG),1)
-	EXTRA_CFLAGS += -DDEBUG
-endif
-
-# Controls debug information via /proc interface
 CONFIG_SND_DEBUG ?= 0
-ifeq ($(CONFIG_SND_DEBUG),1)
-  EXTRA_CFLAGS += -DCONFIG_SND_DEBUG
-endif
+
+EXTRA_CFLAGS += $(if $(filter 1,$(DEBUG)),-DDEBUG,)
+EXTRA_CFLAGS += $(if $(filter 1,$(CONFIG_SND_DEBUG)),-DCONFIG_SND_DEBUG,)
 
 # Force to build the module as loadable kernel module.
 # Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
