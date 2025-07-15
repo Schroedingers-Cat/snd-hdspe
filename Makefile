@@ -37,13 +37,14 @@ modules: dkms.conf
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
 
 dkms.conf: dkms.conf.in
-	sed -e "s/@PACKAGE_NAME@/$(PACKAGE_NAME)/g" \
+	@echo "Generating dkms.conf from template..."
+	@sed -e "s/@PACKAGE_NAME@/$(PACKAGE_NAME)/g" \
 	    -e "s/@PACKAGE_VERSION@/$(PACKAGE_VERSION)/g" \
 	    $< > $@
 
 clean:
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) clean
-	-rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
+	@rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 insert: all remove-mainlined
 	insmod $(PACKAGE_NAME).ko
@@ -55,12 +56,14 @@ remove-mainlined:
 	-rmmod snd-hdspm
 
 install: all remove-mainlined
+	@echo "Installing module into DKMS tree for manual use..."
 	-rm -rf $(DKMS_PATH)
 	mkdir -p $(DKMS_PATH)
 	cp -r Makefile dkms.conf* sound $(DKMS_PATH)/
 	dkms install $(PACKAGE_NAME)/$(PACKAGE_VERSION)
 
 uninstall:
+	@echo "Removing module from DKMS tree..."
 	@versions=$$(dkms status -m $(PACKAGE_NAME) \
 	    | grep -E ",\s*$(KERNELRELEASE),.*installed" \
 	    | grep -Po "^$(PACKAGE_NAME)/\K[^,]+"); \
