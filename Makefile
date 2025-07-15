@@ -31,10 +31,10 @@ KDIR ?= /lib/modules/$(KERNELRELEASE)/build
 PWD := $(shell pwd)
 EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
 
-default: depend
-	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
+all: modules
 
-depend: dkms.conf
+modules: dkms.conf
+	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
 
 dkms.conf: dkms.conf.in
 	sed -e "s/@PACKAGE_NAME@/$(PACKAGE_NAME)/g" \
@@ -45,14 +45,14 @@ clean:
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) clean
 	-rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
-insert: default
+insert: all
 	-rmmod snd-hdspm
 	insmod $(PACKAGE_NAME).ko
 
 remove:
 	rmmod $(PACKAGE_NAME)
 
-install: default
+install: all
 	-rmmod snd-hdspm
 	-rm -rf $(DKMS_PATH)
 	mkdir -p $(DKMS_PATH)
