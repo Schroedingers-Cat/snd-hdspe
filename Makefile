@@ -31,6 +31,10 @@ KDIR ?= /lib/modules/$(KERNELRELEASE)/build
 PWD := $(shell pwd)
 EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
 
+# --- Standard Build Targets ---
+# These are the only targets needed for DKMS to work.
+# They are also used for manual compilation.
+
 all: modules
 
 modules: dkms.conf
@@ -54,6 +58,9 @@ remove:
 
 remove-mainlined:
 	-rmmod snd-hdspm
+
+# --- DKMS Convenience Targets for Manual Installation ---
+# These targets are helpful for developers.
 
 install: all remove-mainlined
 	@echo "Installing module into DKMS tree for manual use..."
