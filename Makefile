@@ -3,8 +3,8 @@ PACKAGE_NAME := snd-hdspe
 PACKAGE_VERSION := 1.0.1
 DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
-# Main module definition - works for both in-tree and out-of-tree builds
-obj-$(CONFIG_SND_HDSPE) += $(PACKAGE_NAME).o
+# Direct module definition
+obj-m += $(PACKAGE_NAME).o
 
 # List all object files explicitly for better DKMS compatibility
 $(PACKAGE_NAME)-y := \
@@ -25,16 +25,11 @@ $(PACKAGE_NAME)-y := \
 # Add include path for header files
 ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
-# DKMS sets this environment variable to build for several versions of Linux kernel
-ifndef KERNELRELEASE
-# Out-of-tree build
-KERNELRELEASE := $(shell uname -r)
-KDIR    ?= /lib/modules/${KERNELRELEASE}/build
-PWD     := $(shell pwd)
+# Set default kernel directory and path variables.
+KERNELRELEASE ?= $(shell uname -r)
+KDIR ?= /lib/modules/$(KERNELRELEASE)/build
+PWD := $(shell pwd)
 EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
-
-# Force to build the module as loadable kernel module for out-of-tree builds
-export CONFIG_SND_HDSPE=m
 
 default: depend
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
@@ -87,15 +82,3 @@ show-controls: list-controls
 
 enable-debug-log:
 	echo 8 > /proc/sys/kernel/printk
-else
-# Kernel build (in-tree or DKMS using kbuild)
-
-# For in-tree builds, CONFIG_SND_HDSPE will be controlled by sound/pci/Kconfig
-ifneq ($(CONFIG_SND_HDSPE),)
-  # handle this via Kconfig
-else
-  # For DKMS builds using kbuild directly, we need to set this explicitly
-  export CONFIG_SND_HDSPE=m
-endif
-
-endif
