@@ -1,7 +1,6 @@
 # Module metadata
 PACKAGE_NAME := snd-hdspe
 PACKAGE_VERSION := 1.0.1
-DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 # Direct module definition
 obj-m += $(PACKAGE_NAME).o
@@ -61,6 +60,7 @@ remove-mainlined:
 
 # --- DKMS Convenience Targets for Manual Installation ---
 # These targets are helpful for developers.
+DKMS_PATH := /usr/src/$(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 install: all remove-mainlined
 	@echo "Installing module into DKMS tree for manual use..."
