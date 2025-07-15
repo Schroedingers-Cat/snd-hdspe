@@ -45,15 +45,16 @@ clean:
 	$(MAKE) W=1 -C $(KDIR) M=$(PWD) clean
 	-rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
-insert: all
-	-rmmod snd-hdspm
+insert: all remove-mainlined
 	insmod $(PACKAGE_NAME).ko
 
 remove:
 	rmmod $(PACKAGE_NAME)
 
-install: all
+remove-mainlined:
 	-rmmod snd-hdspm
+
+install: all remove-mainlined
 	-rm -rf $(DKMS_PATH)
 	mkdir -p $(DKMS_PATH)
 	cp -r Makefile dkms.conf* sound $(DKMS_PATH)/
