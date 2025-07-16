@@ -8,29 +8,25 @@ endif
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
 
-# Debug options
-
-# Controls debug logging of dev_dbg functions via dmesg
+# Debug and warning flags
 DEBUG ?= 0
-ifeq ($(DEBUG),1)
-	EXTRA_CFLAGS += -DDEBUG
-endif
-
-# Controls debug information via /proc interface
 CONFIG_SND_DEBUG ?= 0
-ifeq ($(CONFIG_SND_DEBUG),1)
-  EXTRA_CFLAGS += -DCONFIG_SND_DEBUG
-endif
+WARNINGS ?= 0
+
+EXTRA_CFLAGS += $(if $(filter 1,$(DEBUG)),-DDEBUG,)
+EXTRA_CFLAGS += $(if $(filter 1,$(CONFIG_SND_DEBUG)),-DCONFIG_SND_DEBUG,)
+# W can only be W=1/2/3
+WFLAG := $(if $(filter 1 2 3,$(WARNINGS)),W=$(WARNINGS),)
 
 # Force to build the module as loadable kernel module.
 # Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
 export CONFIG_SND_HDSPE=m
 
 default: depend
-	$(MAKE) W=1 -C $(KDIR) M=$(PWD) modules
+	$(MAKE) $(WFLAG) -C $(KDIR) M=$(PWD) modules
 
 clean:
-	$(MAKE) W=1 -C $(KDIR) M=$(PWD) clean
+	$(MAKE) $(WFLAG) -C $(KDIR) M=$(PWD) clean
 	-rm *~
 	-touch deps
 
@@ -57,7 +53,7 @@ show-controls: list-controls
 	less asound.state
 
 debug:
-	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1
+	$(MAKE) CONFIG_SND_DEBUG=1 DEBUG=1 WARNINGS=1
 
 depend:
 	gcc -MM sound/pci/hdsp/hdspe/hdspe*.c > deps
