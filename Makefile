@@ -73,8 +73,18 @@ install: all remove-mainlined
 
 uninstall:
 	@echo "Removing module from DKMS tree..."
-	sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) --all
-	sudo rm -rf $(DKMS_SRC_PATH)
+	@versions=$$(dkms status -m $(PACKAGE_NAME) \
+	    | grep -E ",\s*$(KERNELRELEASE),.*installed" \
+	    | grep -Po "^$(PACKAGE_NAME)/\K[^,]+"); \
+	if [ -z "$$versions" ]; then \
+	  echo "No $(PACKAGE_NAME) installed for kernel $(KERNELRELEASE)."; \
+	else \
+	  for ver in $$versions; do \
+	    echo "Removing $(PACKAGE_NAME)/$$ver from kernel $(KERNELRELEASE)…"; \
+	    sudo dkms remove $(PACKAGE_NAME)/$$ver -k $(KERNELRELEASE); \
+	    sudo rm -rf "/usr/src/$(PACKAGE_NAME)-$$ver"; \
+	  done; \
+	fi
 
 list-controls:
 	-rm asound.state
