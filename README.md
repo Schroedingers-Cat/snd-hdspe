@@ -100,7 +100,7 @@ assists module signing for secure boot.
   2. Copy all relevant files to /usr/src/snd-hdspe-${PackageVersion}
   3. Install the module with DKMS
 
-Note, if `dkms status` lists `alsa-hdspe` driver, you have to uninstall it first using `dkms remove alsa-hdspe/0.0 --all`.
+Note, if `dkms status` lists `alsa-hdspe`, you have to uninstall it first using `dkms remove alsa-hdspe/0.0 --all`.
 
 - For uninstalling, run:
 
