@@ -21,6 +21,9 @@ $(PACKAGE_NAME)-y := \
 	sound/pci/hdsp/hdspe/hdspe_tco.o \
 	sound/pci/hdsp/hdspe/hdspe_ltc_math.o
 
+# Add include path for header files
+ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
+
 # Debug and warning flags
 DEBUG ?= 0
 CONFIG_SND_DEBUG ?= 0
@@ -30,8 +33,6 @@ EXTRA_CFLAGS += $(if $(filter 1,$(DEBUG)),-DDEBUG,)
 EXTRA_CFLAGS += $(if $(filter 1,$(CONFIG_SND_DEBUG)),-DCONFIG_SND_DEBUG,)
 # W can only be W=1/2/3
 WFLAG := $(if $(filter 1 2 3,$(WARNINGS)),W=$(WARNINGS),)
-# Add include path for header files
-ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
 # Set default kernel directory and path variables.
 KERNELRELEASE ?= $(shell uname -r)
