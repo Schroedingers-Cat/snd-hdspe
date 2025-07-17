@@ -50,13 +50,13 @@ clean:
 	@rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)
 
 insert: all remove-mainlined
-	insmod $(PACKAGE_NAME).ko
+	sudo insmod $(PACKAGE_NAME).ko
 
 remove:
-	rmmod $(PACKAGE_NAME)
+	sudo rmmod $(PACKAGE_NAME)
 
 remove-mainlined:
-	-rmmod snd-hdspm
+	-sudo rmmod snd-hdspm
 
 # --- DKMS Convenience Targets for Manual Installation ---
 # These targets are helpful for developers.
