@@ -47,7 +47,7 @@ This builds the snd-hdspe.ko kernel driver in the sound/pci/hdsp/hdspe subdirect
 
 or
 
-      sudo make insert
+      make insert
 
 You need to stop all (audio) applications using the snd-hdspm driver before, in particular PulseAudio and the jack audio server.
 
@@ -73,7 +73,7 @@ or
 
 or
 
-      sude make remove
+      make remove
 
 - Viewing ALSA controls:
 
@@ -101,7 +101,7 @@ assists module signing for secure boot.
 
 - For installing, simply run:
 
-        sudo make install
+        make install
 
   This will:
   1. Build the module
@@ -110,7 +110,7 @@ assists module signing for secure boot.
 
 - For uninstalling, run:
 
-        sudo make uninstall
+        make uninstall
 
   This will remove the currently installed snd-hdspe module using DKMS as well as the source files copied to `/usr/src` from the `install` target.
 
