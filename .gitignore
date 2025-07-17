@@ -10,6 +10,7 @@ dkms.conf
 *.cmd
 .module-common.o
 *.o
+*.o.d
 *.ko
 *.mod
 *.mod.c
