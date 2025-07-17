@@ -5,16 +5,15 @@
 deps
 modules.order
 Module.symvers
+dkms.conf
 
 *.cmd
-sound/pci/hdsp/hdspe/*.o
-sound/pci/hdsp/hdspe/*.ko
-sound/pci/hdsp/hdspe/*.mod
-sound/pci/hdsp/hdspe/*.mod.c
+.module-common.o
+*.o
+*.ko
+*.mod
+*.mod.c
 
 # IDE files
 .idea/
 .vscode/
-
-# sym links created by builds
-alsa-hdspe-0.0

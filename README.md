@@ -47,7 +47,7 @@ This builds the snd-hdspe.ko kernel driver in the sound/pci/hdsp/hdspe subdirect
 
 or
 
-      sudo make insert
+      make insert
 
 You need to stop all (audio) applications using the snd-hdspm driver before, in particular PulseAudio and the jack audio server.
 
@@ -65,7 +65,7 @@ testing it once.
 
 or
 
-      sude make remove
+      make remove
 
 - Viewing ALSA controls:
 
@@ -91,25 +91,20 @@ assists module signing for secure boot.
 
         sudo apt install dkms
 
-- For preparation, execute cd to your clone copy folder, then type
-
-        sudo ln -s $(pwd) /usr/src/alsa-hdspe-0.0
-
-- For installing, type
-
-        sudo dkms install alsa-hdspe/0.0
-
-- For uninstalling, type
-
-        sudo dkms remove alsa-hdspe/0.0
-
-- Or simply:
+- For installing, simply run:
 
         make install
 
-or
+  This will:
+  1. Build the module
+  2. Copy all relevant files to /usr/src/snd-hdspe-${PackageVersion}
+  3. Install the module with DKMS
+
+- For uninstalling, run:
 
         make uninstall
+
+  This will remove the currently installed snd-hdspe module using DKMS as well as the source files copied to `/usr/src` from the `install` target.
 
 **Debugging**  
 
