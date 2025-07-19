@@ -54,6 +54,17 @@ dkms.conf: dkms.conf.in
 	    -e "s/@PACKAGE_VERSION@/$(PACKAGE_VERSION)/g" \
 	    $< > $@
 
+# Generate compilation database for IDE integration
+compiledb:
+	@which bear > /dev/null || (echo "Error: 'bear' tool not found. Please install it for IDE integration." && exit 1)
+	@if [ ! -f compile_commands.json ] || [ -n "$$(find . -newer compile_commands.json -name "*.c" -o -name "*.h")" ]; then \
+		echo "Generating compilation database for IDE integration..."; \
+		if [ -f compile_commands.json ]; then rm compile_commands.json; fi; \
+		bear -- $(MAKE) W=1 -C $(KDIR) M=$(PWD) modules || true; \
+	else \
+		echo "Compilation database is up to date"; \
+	fi
+
 clean:
 	$(MAKE) $(WFLAG) -C $(KDIR) M=$(PWD) clean
 	@rm -f *~ dkms.conf $(PACKAGE_NAME)-$(PACKAGE_VERSION)

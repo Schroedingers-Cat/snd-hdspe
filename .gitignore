@@ -18,3 +18,4 @@ dkms.conf
 # IDE files
 .idea/
 .vscode/
+compile_commands.json
