@@ -166,7 +166,6 @@ snd_hdspe_midi_input_trigger(struct snd_rawmidi_substream *substream, int up)
 
 static void snd_hdspe_midi_output_timer(struct timer_list *t)
 {
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 16, 0)
 	struct hdspe_midi *hmidi = timer_container_of(hmidi, t, timer);
 #else
