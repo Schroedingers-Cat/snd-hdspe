@@ -1,6 +1,6 @@
 # Module metadata
 PACKAGE_NAME := snd-hdspe
-PACKAGE_VERSION := 1.0.1+develop
+PACKAGE_VERSION := 1.0.2+develop
 
 # Direct module definition
 obj-m += $(PACKAGE_NAME).o
