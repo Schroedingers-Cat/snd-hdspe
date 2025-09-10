@@ -95,6 +95,10 @@ uninstall:
 	  done; \
 	fi
 
+uninstall-all:
+	@echo "Removing module from DKMS tree for all kernels..."
+	-sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) --all
+
 # Generate compilation database for IDE integration
 compiledb:
 	@which bear > /dev/null || (echo "Error: 'bear' tool not found. Please install it for IDE integration." && exit 1)
