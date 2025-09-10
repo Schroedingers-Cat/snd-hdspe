@@ -2,7 +2,7 @@
 New linux kernel ALSA driver for [RME](http://www.rme-audio.com) HDSPe MADI / AES / RayDAT / AIO and AIO Pro sound cards and extension modules.
 
 Forked from [snd-hdspe](https://github.com/PhilippeBekaert/snd-hdspe) which is no longer maintained as Prof. Dr. Philippe Bekaert passed away in 2022.  
-This fork's `main` branch contains kernel compatibility updates for newer kernels (v5.12, v6.2). The `develop` branch contains WIP features like suspend/resume support, improved logging (debug/production levels) and fixes various compiler warnings.
+This fork's `main` branch contains kernel compatibility updates for newer kernels (v5.12, v6.2, v6.16). The `develop` branch contains WIP features like suspend/resume support, improved logging (debug/production levels) and fixes various compiler warnings.
 
 **Original README text**  
 New linux kernel ALSA driver for [RME](http://www.rme-audio.com) HDSPe MADI / AES / RayDAT / AIO and AIO Pro sound cards and extension modules.
