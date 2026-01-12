@@ -369,6 +369,8 @@ static enum hdspe_io_type hdspe_get_io_type(int pci_vendor_id, int firmware_rev)
 			HDSPE_AIO_PRO : HDSPE_AIO;
 	case HDSPE_MADIFACE_REV:
 		return HDSPE_MADIFACE;
+	case HDSPE_MADI_REV:
+		return HDSPE_MADI;
 	default:
 		if ((firmware_rev == 0xf0) ||
 		    ((firmware_rev >= 0xe6) &&

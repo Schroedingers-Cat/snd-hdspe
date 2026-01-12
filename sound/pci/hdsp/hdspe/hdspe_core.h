@@ -28,7 +28,7 @@
 #include <sound/info.h>
 
 // #define HDSPE_HDSP_REV  60  //  HDSPe PCIe/ExpressCard
-#define HDSPE_MADI_REV		210  // TODO: use
+#define HDSPE_MADI_REV		210
 #define HDSPE_RAYDAT_REV	211
 #define HDSPE_AIO_REV		212
 #define HDSPE_MADIFACE_REV	213
