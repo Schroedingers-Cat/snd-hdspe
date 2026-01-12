@@ -406,8 +406,8 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	INIT_WORK(&hdspe->midi_work, hdspe_midi_work);
 	INIT_WORK(&hdspe->status_work, hdspe_status_work);
 
-	pci_read_config_word(hdspe->pci,
-			PCI_CLASS_REVISION, &hdspe->firmware_rev);
+	pci_read_config_byte(hdspe->pci,
+			PCI_REVISION_ID, &hdspe->firmware_rev);
 	hdspe->vendor_id = pci->vendor;
 
 	dev_dbg(card->dev,

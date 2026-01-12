@@ -920,7 +920,7 @@ struct hdspe {
 	unsigned long port;
 	void __iomem *iobase;
 
-	u16 firmware_rev;            /* determines io_type (card model) */
+	u8  firmware_rev;            /* determines io_type (card model) */
 	u16 reserved;
 	u32 fw_build;                /* firmware build */
 	u32 serial;                  /* serial nr */
