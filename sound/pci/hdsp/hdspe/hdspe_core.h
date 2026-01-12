@@ -920,6 +920,7 @@ struct hdspe {
 	unsigned long port;
 	void __iomem *iobase;
 
+	// TODO: Rename this to pci_rev and ensure wherever this gets copied is u8 as well
 	u8  firmware_rev;            /* determines io_type (card model) */
 	u16 reserved;
 	u32 fw_build;                /* firmware build */
