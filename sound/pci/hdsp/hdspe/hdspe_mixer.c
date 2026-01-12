@@ -111,8 +111,9 @@ void hdspe_mixer_update_channel_map(struct hdspe* hdspe)
 		used[i] = false;
 	}
 	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		int c = hdspe->channel_map_out[i];
-		used[c] = true;
+		const int c = hdspe->channel_map_out[i];
+		if (c >= 0 && c < HDSPE_MAX_CHANNELS)
+			used[c] = true;
 	}
 	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
 		if (!used[i]) {
@@ -132,8 +133,9 @@ void hdspe_mixer_update_channel_map(struct hdspe* hdspe)
 		used[i] = false;
 	}
 	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		int c = hdspe->channel_map_in[i];
-		used[c] = true;
+		const int c = hdspe->channel_map_in[i];
+		if (c >= 0 && c < HDSPE_MAX_CHANNELS)
+			used[c] = true;
 	}
 	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {	
 		if (!used[i]) {
