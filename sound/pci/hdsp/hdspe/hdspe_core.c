@@ -365,6 +365,12 @@ static enum hdspe_io_type hdspe_get_io_type(int pci_vendor_id, int firmware_rev)
 	case HDSPE_RAYDAT_REV:
 		return HDSPE_RAYDAT;
 	case HDSPE_AIO_REV:
+		// According to the RME HDSPe AIO manual
+		// (https://rme-audio.de/downloads/hdspeaio_e.pdf, page 39), the Vendor
+		// ID of the card is not RME (0x1d18) but Xilinx (0x10ee). Since AIO
+		// and AIO Pro use 0xd4 as firmware_rev, we can only discriminate using
+		// pci_vendor_id
+		// Another source: https://www.forum.rme-audio.de/viewtopic.php?id=23315
 		return (pci_vendor_id == PCI_VENDOR_ID_RME) ?
 			HDSPE_AIO_PRO : HDSPE_AIO;
 	case HDSPE_MADIFACE_REV:
