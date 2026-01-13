@@ -863,8 +863,8 @@ struct hdspe_tables {
 	const char * const *port_names_out_ds;
 	const char * const *port_names_out_qs;
 
-	const signed char *channel_map_in_ss, *channel_map_in_ds, *channel_map_in_qs;
-	const signed char *channel_map_out_ss, *channel_map_out_ds, *channel_map_out_qs;
+	const s8 *channel_map_in_ss, *channel_map_in_ds, *channel_map_in_qs;
+	const s8 *channel_map_out_ss, *channel_map_out_ds, *channel_map_out_qs;
 	
 	unsigned char ss_in_channels;
 	unsigned char ds_in_channels;
@@ -983,8 +983,8 @@ struct hdspe {
 	/* Channel map and port names - set by hdspe_set_channel_map() */
 	unsigned char max_channels_in;
 	unsigned char max_channels_out;
-	const signed char *channel_map_in;
-	const signed char *channel_map_out;
+	const s8 *channel_map_in;
+	const s8 *channel_map_out;
 	const char * const *port_names_in;
 	const char * const *port_names_out;
 

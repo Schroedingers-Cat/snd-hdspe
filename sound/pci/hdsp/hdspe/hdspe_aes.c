@@ -76,7 +76,7 @@ static const char * const texts_ports_aes[] = {
    and the value is the DMA channel (i.e. channel buffer number)
    where the data for that channel can be read/written from/to.
 */
-static const char channel_map_aes[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aes[HDSPE_MAX_CHANNELS] = {
 	0, 1, 2, 3, 4, 5, 6, 7,
 	8, 9, 10, 11, 12, 13, 14, 15,
 	-1, -1, -1, -1, -1, -1, -1, -1,
