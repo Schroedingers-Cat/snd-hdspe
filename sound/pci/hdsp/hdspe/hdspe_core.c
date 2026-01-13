@@ -359,9 +359,9 @@ static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 }
 
 /* Get card model. TODO: check against Mac and windows driver */
-static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const int firmware_rev, const u32 firmware_build)
+static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const u8 pci_rev_id, const u32 firmware_build)
 {
-	switch (firmware_rev) {
+	switch (pci_rev_id) {
 	case HDSPE_RAYDAT_REV:
 		return HDSPE_RAYDAT;
 	case HDSPE_AIO_REV:
@@ -390,13 +390,13 @@ static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const int f
 	case HDSPE_MADI_REV:
 		return HDSPE_MADI;
 	default:
-		if ((firmware_rev == 0xf0) ||
-		    ((firmware_rev >= 0xe6) &&
-		     (firmware_rev <= 0xea))) {
+		if ((pci_rev_id == 0xf0) ||
+		    ((pci_rev_id >= 0xe6) &&
+		     (pci_rev_id <= 0xea))) {
 			return HDSPE_AES;
-		} else if ((firmware_rev == 0xd2) ||
-			   ((firmware_rev >= 0xc8)  &&
-			    (firmware_rev <= 0xcf))) {
+		} else if ((pci_rev_id == 0xd2) ||
+			   ((pci_rev_id >= 0xc8)  &&
+			    (pci_rev_id <= 0xcf))) {
 			return HDSPE_MADI;
 		}
 	}
@@ -419,12 +419,12 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	INIT_WORK(&hdspe->status_work, hdspe_status_work);
 
 	pci_read_config_byte(hdspe->pci,
-			PCI_REVISION_ID, &hdspe->firmware_rev);
+			PCI_REVISION_ID, &hdspe->pci_rev_id);
 	hdspe->vendor_id = pci->vendor;
 
 	dev_dbg(card->dev,
-		"PCI vendor %04x, device %04x, class revision %x\n",
-		pci->vendor, pci->device, hdspe->firmware_rev);
+		"PCI vendor %04x, device %04x, pci revision id %x\n",
+		pci->vendor, pci->device, hdspe->pci_rev_id);
 	
 	strcpy(card->mixername, "RME HDSPe");
 	strcpy(card->driver, "HDSPe");
@@ -494,12 +494,12 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 
 	/* Determine card model */
 	hdspe->io_type = hdspe_get_io_type(hdspe->vendor_id,
-									   hdspe->firmware_rev,
-									   hdspe->fw_build);
+	                                   hdspe->pci_rev_id,
+	                                   hdspe->fw_build);
 	if (hdspe->io_type == HDSPE_IO_TYPE_INVALID) {
 		dev_err(card->dev,
-			"unknown firmware revision %d (0x%x)\n",
-			hdspe->firmware_rev, hdspe->firmware_rev);
+			"unknown pci revision id %d (0x%x)\n",
+			hdspe->pci_rev_id, hdspe->pci_rev_id);
 		return -ENODEV;
 	}
 

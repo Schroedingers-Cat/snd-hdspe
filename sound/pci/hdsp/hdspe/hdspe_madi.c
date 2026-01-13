@@ -360,7 +360,7 @@ static void hdspe_madi_proc_read(struct snd_info_entry *entry,
 
 	snd_iprintf(buffer, "%s (Card #%d) Rev.%x Status2first3bits: %x\n",
 			hdspe->card_name, hdspe->card->number + 1,
-			hdspe->firmware_rev,
+			hdspe->pci_rev_id,
 			(status2 & HDSPE_version0) |
 			(status2 & HDSPE_version1) | (status2 &
 				HDSPE_version2));

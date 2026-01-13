@@ -334,7 +334,7 @@ static void hdspe_aes_proc_read(struct snd_info_entry * entry,
 
 	snd_iprintf(buffer, "%s (Card #%d) Rev.%x\n",
 		    hdspe->card_name, hdspe->card->number + 1,
-		    hdspe->firmware_rev);
+		    hdspe->pci_rev_id);
 
 	snd_iprintf(buffer, "IRQ: %d Registers bus: 0x%lx VM: 0x%lx\n",
 		    hdspe->irq, hdspe->port, (unsigned long)hdspe->iobase);

@@ -43,7 +43,7 @@ void hdspe_get_card_info(struct hdspe* hdspe, struct hdspe_card_info *s)
 	s->version = HDSPE_VERSION;
 	s->card_type = hdspe->io_type;
 	s->serial = hdspe->serial;
-	s->fw_rev = hdspe->firmware_rev;
+	s->pci_rev_id = hdspe->pci_rev_id;
 	s->fw_build = hdspe->fw_build;
 	s->irq = hdspe->irq;
 	s->port = hdspe->port;
@@ -233,7 +233,7 @@ static int snd_hdspe_hwdep_ioctl(struct snd_hwdep *hw, struct file *file,
 		strscpy(hdspe_version.cardname, hdspe->card_name,
 				sizeof(hdspe_version.cardname));
 		hdspe_version.serial = hdspe->serial;
-		hdspe_version.firmware_rev = hdspe->firmware_rev;
+		hdspe_version.pci_rev_id = hdspe->pci_rev_id;
 		hdspe_version.addons = 0;
 		if (hdspe->tco)
 			hdspe_version.addons |= HDSPE_ADDON_TCO;
