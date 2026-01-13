@@ -197,7 +197,7 @@ static const char * const texts_ports_aio_out_qs[] = {
    and the value is the DMA channel (i.e. channel buffer number)
    where the data for that channel can be read/written from/to.
 */
-static const char channel_map_raydat_ss[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_raydat_ss[HDSPE_MAX_CHANNELS] = {
 	4, 5, 6, 7, 8, 9, 10, 11,	/* ADAT 1 */
 	12, 13, 14, 15, 16, 17, 18, 19,	/* ADAT 2 */
 	20, 21, 22, 23, 24, 25, 26, 27,	/* ADAT 3 */
@@ -210,7 +210,7 @@ static const char channel_map_raydat_ss[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-static const char channel_map_raydat_ds[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_raydat_ds[HDSPE_MAX_CHANNELS] = {
 	4, 5, 6, 7,		/* ADAT 1 */
 	8, 9, 10, 11,		/* ADAT 2 */
 	12, 13, 14, 15,		/* ADAT 3 */
@@ -225,7 +225,7 @@ static const char channel_map_raydat_ds[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-static const char channel_map_raydat_qs[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_raydat_qs[HDSPE_MAX_CHANNELS] = {
 	4, 5,			/* ADAT 1 */
 	6, 7,			/* ADAT 2 */
 	8, 9,			/* ADAT 3 */
@@ -241,7 +241,7 @@ static const char channel_map_raydat_qs[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-static const char channel_map_aio_in_ss[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_in_ss[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line in */
 	8, 9,			/* aes in, */
 	10, 11,			/* spdif in */
@@ -255,7 +255,7 @@ static const char channel_map_aio_in_ss[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-static const char channel_map_aio_out_ss[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_out_ss[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line out */
 	8, 9,			/* aes out */
 	10, 11,			/* spdif out */
@@ -270,7 +270,7 @@ static const char channel_map_aio_out_ss[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-static const char channel_map_aio_in_ds[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_in_ds[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line in */
 	8, 9,			/* aes in */
 	10, 11,			/* spdif in */
@@ -285,7 +285,7 @@ static const char channel_map_aio_in_ds[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1
 };
 
-static const char channel_map_aio_out_ds[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_out_ds[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line out */
 	8, 9,			/* aes out */
 	10, 11,			/* spdif out */
@@ -300,7 +300,7 @@ static const char channel_map_aio_out_ds[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1
 };
 
-static const char channel_map_aio_in_qs[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_in_qs[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line in */
 	8, 9,			/* aes in */
 	10, 11,			/* spdif in */
@@ -315,7 +315,7 @@ static const char channel_map_aio_in_qs[HDSPE_MAX_CHANNELS] = {
 	-1, -1, -1, -1, -1, -1, -1, -1
 };
 
-static const char channel_map_aio_out_qs[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_aio_out_qs[HDSPE_MAX_CHANNELS] = {
 	0, 1,			/* line out */
 	8, 9,			/* aes out */
 	10, 11,			/* spdif out */

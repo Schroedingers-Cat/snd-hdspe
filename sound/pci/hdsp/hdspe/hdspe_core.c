@@ -396,24 +396,44 @@ static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 }
 
 /* Get card model. TODO: check against Mac and windows driver */
-static enum hdspe_io_type hdspe_get_io_type(int pci_vendor_id, int firmware_rev)
+static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const u8 pci_rev_id, const u32 firmware_build)
 {
-	switch (firmware_rev) {
+	switch (pci_rev_id) {
 	case HDSPE_RAYDAT_REV:
 		return HDSPE_RAYDAT;
 	case HDSPE_AIO_REV:
-		return (pci_vendor_id == PCI_VENDOR_ID_RME) ?
-			HDSPE_AIO_PRO : HDSPE_AIO;
+		if (pci_vendor_id == PCI_VENDOR_ID_XILINX)
+		{
+			// According to the RME HDSPe AIO manual
+			// (https://rme-audio.de/downloads/hdspeaio_e.pdf, page 39), the Vendor
+			// ID of the card is not RME (0x1d18) but Xilinx (0x10ee). Since AIO
+			// and AIO Pro use 0xd4 as firmware_rev, we can only discriminate using
+			// pci_vendor_id
+			// Another source: https://www.forum.rme-audio.de/viewtopic.php?id=23315
+			return HDSPE_AIO;
+		}
+		if (firmware_build == 14 || firmware_build == 200 || firmware_build == 201)
+		{
+			return HDSPE_AIO;
+		}
+		if (firmware_build == 23 || firmware_build == 108)
+		{
+			// This is for completeness
+			return HDSPE_AIO_PRO;
+		}
+		return HDSPE_AIO_PRO;
 	case HDSPE_MADIFACE_REV:
 		return HDSPE_MADIFACE;
+	case HDSPE_MADI_REV:
+		return HDSPE_MADI;
 	default:
-		if ((firmware_rev == 0xf0) ||
-		    ((firmware_rev >= 0xe6) &&
-		     (firmware_rev <= 0xea))) {
+		if ((pci_rev_id == 0xf0) ||
+		    ((pci_rev_id >= 0xe6) &&
+		     (pci_rev_id <= 0xea))) {
 			return HDSPE_AES;
-		} else if ((firmware_rev == 0xd2) ||
-			   ((firmware_rev >= 0xc8)  &&
-			    (firmware_rev <= 0xcf))) {
+		} else if ((pci_rev_id == 0xd2) ||
+			   ((pci_rev_id >= 0xc8)  &&
+			    (pci_rev_id <= 0xcf))) {
 			return HDSPE_MADI;
 		}
 	}
@@ -462,26 +482,16 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 
 	hdspe_work_start(hdspe);
 
-	pci_read_config_word(hdspe->pci,
-			PCI_CLASS_REVISION, &hdspe->firmware_rev);
+	pci_read_config_byte(hdspe->pci,
+			PCI_REVISION_ID, &hdspe->pci_rev_id);
 	hdspe->vendor_id = pci->vendor;
 
 	dev_dbg(card->dev,
-		"PCI vendor %04x, device %04x, class revision %x\n",
-		pci->vendor, pci->device, hdspe->firmware_rev);
+		"PCI vendor %04x, device %04x, pci revision id %x\n",
+		pci->vendor, pci->device, hdspe->pci_rev_id);
 	
 	strcpy(card->mixername, "RME HDSPe");
 	strcpy(card->driver, "HDSPe");
-
-	/* Determine card model */
-	hdspe->io_type = hdspe_get_io_type(hdspe->vendor_id,
-					   hdspe->firmware_rev);
-	if (hdspe->io_type == HDSPE_IO_TYPE_INVALID) {
-		dev_err(card->dev,
-			"unknown firmware revision %d (0x%x)\n",
-			hdspe->firmware_rev, hdspe->firmware_rev);
-		return -ENODEV;
-	}
 
 	/* PCI */
 	err = pci_enable_device(pci);
@@ -545,6 +555,17 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	/* Firmware build */
 	hdspe->fw_build = le32_to_cpu(hdspe_read(hdspe, HDSPE_RD_FLASH)) >> 12;
 	dev_dbg(card->dev, "firmware build %d\n", hdspe->fw_build);
+
+	/* Determine card model */
+	hdspe->io_type = hdspe_get_io_type(hdspe->vendor_id,
+	                                   hdspe->pci_rev_id,
+	                                   hdspe->fw_build);
+	if (hdspe->io_type == HDSPE_IO_TYPE_INVALID) {
+		dev_err(card->dev,
+			"unknown pci revision id %d (0x%x)\n",
+			hdspe->pci_rev_id, hdspe->pci_rev_id);
+		return -ENODEV;
+	}
 
 	/* Serial number */
 	if (pci->vendor == PCI_VENDOR_ID_RME || hdspe->fw_build >= 200)

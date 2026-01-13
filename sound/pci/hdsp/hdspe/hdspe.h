@@ -821,7 +821,7 @@ struct hdspe_version {
 	__u8 card_type; /* enum hdspe_io_type */
 	char cardname[20];
 	unsigned int serial;
-	unsigned short firmware_rev;
+	unsigned short pci_rev_id;
 	int addons;
 };
 
@@ -847,13 +847,13 @@ struct hdspe_card_info {
 	uint32_t                   version;
 
 	enum hdspe_io_type         card_type;
-	uint32_t                   serial;          /* serial nr */
-	uint32_t                   fw_rev;    // firmware revision 
-	uint32_t                   fw_build;  // firmware build
+	uint32_t                   serial;     // serial number
+	uint32_t                   pci_rev_id; // PCI Revision ID
+	uint32_t                   fw_build;   // firmware build
 
 	uint32_t                   irq;
 	uint64_t                   port;
-	uint32_t                   vendor_id; // PCI vendor ID: Xilinx or RME
+	uint32_t                   vendor_id;  // PCI vendor ID: Xilinx or RME
 
 	uint32_t                   expansion;
 };

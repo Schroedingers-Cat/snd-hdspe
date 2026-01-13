@@ -736,7 +736,7 @@ static const struct snd_kcontrol_new snd_hdspe_controls_aio_pro[] = {
 	HDSPE_RW_KCTL(CARD, "Phones Level", aio_pro_phones_level),
 };
 
-HDSPE_RO_INT1_HDSPE_METHODS(firmware_rev, 0, 0, 1)
+HDSPE_RO_INT1_HDSPE_METHODS(pci_rev_id, 0, 0, 1)
 HDSPE_RO_INT1_HDSPE_METHODS(fw_build, 0, 0, 1)
 HDSPE_RO_INT1_HDSPE_METHODS(serial, 0, 0, 1)
 
@@ -755,7 +755,7 @@ static int hdspe_is_tco_present(struct hdspe* hdspe)
 HDSPE_RO_ENUM_METHODS(tco_present, hdspe_is_tco_present)
 	
 static const struct snd_kcontrol_new snd_hdspe_controls_cardinfo[] = {
-	HDSPE_RO_KCTL(CARD, "Card Revision", firmware_rev),
+	HDSPE_RO_KCTL(CARD, "Card Revision", pci_rev_id),
 	HDSPE_RO_KCTL(CARD, "Firmware Build", fw_build),
 	HDSPE_RO_KCTL(CARD, "Serial", serial),
 	HDSPE_RO_KCTL(CARD, "TCO Present", tco_present),

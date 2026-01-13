@@ -73,7 +73,7 @@ static const char * const texts_ports_madi[] = {
    where the data for that channel can be read/written from/to.
 */
 
-static const char channel_map_unity_ss[HDSPE_MAX_CHANNELS] = {
+static const s8 channel_map_unity_ss[HDSPE_MAX_CHANNELS] = {
 	0, 1, 2, 3, 4, 5, 6, 7,
 	8, 9, 10, 11, 12, 13, 14, 15,
 	16, 17, 18, 19, 20, 21, 22, 23,
@@ -360,7 +360,7 @@ static void hdspe_madi_proc_read(struct snd_info_entry *entry,
 
 	snd_iprintf(buffer, "%s (Card #%d) Rev.%x Status2first3bits: %x\n",
 			hdspe->card_name, hdspe->card->number + 1,
-			hdspe->firmware_rev,
+			hdspe->pci_rev_id,
 			(status2 & HDSPE_version0) |
 			(status2 & HDSPE_version1) | (status2 &
 				HDSPE_version2));

@@ -25,7 +25,7 @@
 #include <sound/info.h>
 
 // #define HDSPE_HDSP_REV  60  //  HDSPe PCIe/ExpressCard
-#define HDSPE_MADI_REV		210  // TODO: use
+#define HDSPE_MADI_REV		210
 #define HDSPE_RAYDAT_REV	211
 #define HDSPE_AIO_REV		212
 #define HDSPE_MADIFACE_REV	213
@@ -860,8 +860,8 @@ struct hdspe_tables {
 	const char * const *port_names_out_ds;
 	const char * const *port_names_out_qs;
 
-	const signed char *channel_map_in_ss, *channel_map_in_ds, *channel_map_in_qs;
-	const signed char *channel_map_out_ss, *channel_map_out_ds, *channel_map_out_qs;
+	const s8 *channel_map_in_ss, *channel_map_in_ds, *channel_map_in_qs;
+	const s8 *channel_map_out_ss, *channel_map_out_ds, *channel_map_out_qs;
 	
 	unsigned char ss_in_channels;
 	unsigned char ds_in_channels;
@@ -917,7 +917,7 @@ struct hdspe {
 	unsigned long port;
 	void __iomem *iobase;
 
-	u16 firmware_rev;            /* determines io_type (card model) */
+	u8  pci_rev_id;              /* determines io_type (card model) */
 	u16 reserved;
 	u32 fw_build;                /* firmware build */
 	u32 serial;                  /* serial nr */
@@ -979,8 +979,8 @@ struct hdspe {
 	/* Channel map and port names - set by hdspe_set_channel_map() */
 	unsigned char max_channels_in;
 	unsigned char max_channels_out;
-	const signed char *channel_map_in;
-	const signed char *channel_map_out;
+	const s8 *channel_map_in;
+	const s8 *channel_map_out;
 	const char * const *port_names_in;
 	const char * const *port_names_out;
 
