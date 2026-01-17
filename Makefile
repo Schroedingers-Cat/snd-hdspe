@@ -96,8 +96,17 @@ uninstall:
 	fi
 
 uninstall-all:
-	@echo "Removing module from DKMS tree for all kernels..."
-	-sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) --all
+	@echo "Unloading and removing all versions of $(PACKAGE_NAME) from DKMS tree..."
+	-@sudo modprobe -r $(PACKAGE_NAME) 2>/dev/null || sudo rmmod $(PACKAGE_NAME) 2>/dev/null || true
+	-@for ver in $$(dkms status -m $(PACKAGE_NAME) 2>/dev/null | awk -F'[/,:]' '{print $$2}' | sort -u); do \
+	  [ -n "$$ver" ] || continue; \
+	  echo "Removing $(PACKAGE_NAME)/$$ver..."; \
+	  sudo dkms remove -m $(PACKAGE_NAME) -v "$$ver" --all 2>/dev/null || true; \
+	done
+	# In case of leftover files blocking DKMS you can uncomment this
+	#-@sudo rm -rf "/usr/src/$(PACKAGE_NAME)-"* 2>/dev/null || true
+	#-@sudo rm -rf "/var/lib/dkms/$(PACKAGE_NAME)" 2>/dev/null || true
+	#-@sudo find /lib/modules -type f -path "*/updates/dkms/$(PACKAGE_NAME).ko*" -exec sudo rm -f {} + 2>/dev/null || true
 
 # Generate compilation database for IDE integration
 compiledb:
