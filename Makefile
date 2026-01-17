@@ -72,19 +72,12 @@ install: all remove-mainlined
 	sudo dkms install -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION)
 
 uninstall:
-	@echo "Removing module from DKMS tree..."
-	@versions=$$(dkms status -m $(PACKAGE_NAME) \
-	    | grep -E ",\s*$(KERNELRELEASE),.*installed" \
-	    | grep -Po "^$(PACKAGE_NAME)/\K[^,]+"); \
-	if [ -z "$$versions" ]; then \
-	  echo "No $(PACKAGE_NAME) installed for kernel $(KERNELRELEASE)."; \
-	else \
-	  for ver in $$versions; do \
-	    echo "Removing $(PACKAGE_NAME)/$$ver from kernel $(KERNELRELEASE)…"; \
-	    sudo dkms remove $(PACKAGE_NAME)/$$ver -k $(KERNELRELEASE); \
-	    sudo rm -rf "/usr/src/$(PACKAGE_NAME)-$$ver"; \
-	  done; \
-	fi
+	@echo "Unloading and removing module from DKMS tree for current kernel $(KERNELRELEASE)..."
+	-@sudo modprobe -r $(PACKAGE_NAME) 2>/dev/null || sudo rmmod $(PACKAGE_NAME) 2>/dev/null || true
+	-@sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE) 2>/dev/null || true
+	# In case of leftover files blocking DKMS you can uncomment this
+	#-@sudo rm -rf "$(DKMS_SRC_PATH)" 2>/dev/null || true
+	#-@sudo rm -f "/lib/modules/$(KERNELRELEASE)/updates/dkms/$(PACKAGE_NAME).ko"* 2>/dev/null || true
 
 list-controls:
 	-rm asound.state
