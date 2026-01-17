@@ -62,7 +62,7 @@ insert: all remove-mainlined
 	sudo insmod $(PACKAGE_NAME).ko
 
 remove:
-	sudo rmmod $(PACKAGE_NAME)
+	-@sudo modprobe -r $(PACKAGE_NAME) 2>/dev/null || sudo rmmod $(PACKAGE_NAME) 2>/dev/null || true
 
 remove-mainlined:
 	-sudo rmmod snd-hdspm
