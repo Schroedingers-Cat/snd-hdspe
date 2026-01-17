@@ -32,7 +32,7 @@
 #define HDSPE_RAYDAT_REV	211
 #define HDSPE_AIO_REV		212
 #define HDSPE_MADIFACE_REV	213
-#define HDSPE_AES_REV		240  // TODO: use
+#define HDSPE_AES_REV		240
 
 /* --- Write registers. ---
   These are defined as byte-offsets from the iobase value.  */

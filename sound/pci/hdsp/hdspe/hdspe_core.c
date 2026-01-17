@@ -389,14 +389,13 @@ static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const u8 pc
 		return HDSPE_MADIFACE;
 	case HDSPE_MADI_REV:
 		return HDSPE_MADI;
+	case HDSPE_AES_REV:
+		return HDSPE_AES_REV;
 	default:
-		if ((pci_rev_id == 0xf0) ||
-		    ((pci_rev_id >= 0xe6) &&
-		     (pci_rev_id <= 0xea))) {
+		if (pci_rev_id >= 0xe6 && pci_rev_id <= 0xea) {
 			return HDSPE_AES;
-		} else if ((pci_rev_id == 0xd2) ||
-			   ((pci_rev_id >= 0xc8)  &&
-			    (pci_rev_id <= 0xcf))) {
+		}
+		if (pci_rev_id >= 0xc8 && pci_rev_id <= 0xcf) {
 			return HDSPE_MADI;
 		}
 	}
