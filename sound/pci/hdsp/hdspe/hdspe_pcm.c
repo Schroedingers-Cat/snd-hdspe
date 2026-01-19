@@ -189,17 +189,27 @@ void hdspe_update_frame_count(struct hdspe* hdspe)
 
 #ifdef DEBUG_FRAME_COUNT
 	{
+		static DEFINE_RATELIMIT_STATE(hdspe_fc_rs, HZ, 1);
 		static u64 last_frame_count =0;
 		static u64 last_hw_pointer =0;
+		u64 delta;
 		hw_pointer = hdspe_hw_pointer(hdspe);
-		dev_dbg(hdspe->card->dev, "%s: hw_pointer=%u (delta %llu), frame_count=%llu (delta=%llu)\n",
-			__func__,
-			hw_pointer,
-			hw_pointer > last_hw_pointer
+		delta = hw_pointer > last_hw_pointer
 			? hw_pointer - last_hw_pointer
-			: (hw_pointer + hdspe->hw_buffer_size) - last_hw_pointer,
-			hdspe->frame_count,
-			hdspe->frame_count - last_frame_count);
+			: (hw_pointer + hdspe->hw_buffer_size) - last_hw_pointer;
+		if (delta > (u64)hdspe->period_size * 4) {
+			dev_warn_ratelimited(hdspe->card->dev,
+				"%s: hw_pointer jump delta=%llu > 4*period_size=%u (period_size=%u, hw_buf=%u).\n",
+				__func__, delta, hdspe->period_size * 4,
+				hdspe->period_size, hdspe->hw_buffer_size);
+		}
+		if (__ratelimit(&hdspe_fc_rs)) {
+			dev_info(hdspe->card->dev,
+				"%s: hw_pointer=%u (delta %llu), frame_count=%llu (delta=%llu)\n",
+				__func__, hw_pointer, delta,
+				hdspe->frame_count,
+				hdspe->frame_count - last_frame_count);
+		}
 		last_frame_count = hdspe->frame_count;
 		last_hw_pointer = hw_pointer;
 	}

@@ -108,6 +108,11 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 {
 	struct hdspe *hdspe = (struct hdspe *) dev_id;
 	int i, audio, midi, schedule = 0;
+	#ifdef DEBUG_IRQ_COUNT
+	static DEFINE_RATELIMIT_STATE(hdspe_irq_rs, HZ, 1);
+	static u16 last_buf_ptr;
+	static unsigned long last_buf_ptr_jiffies;
+	#endif
 
 	hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
 
@@ -136,6 +141,31 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 	if (audio) {
 		hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
 		hdspe->irq_count++;
+
+		#ifdef DEBUG_IRQ_COUNT
+		if (__ratelimit(&hdspe_irq_rs)) {
+			dev_info(hdspe->card->dev,
+				"%s: irq_count=%d LAT=%u BUF_ID=%u BUF_PTR=%u running=%d\n",
+				__func__, hdspe->irq_count,
+				hdspe->reg.control.common.LAT,
+				hdspe->reg.status0.common.BUF_ID,
+				le16_to_cpu(hdspe->reg.status0.common.BUF_PTR),
+				hdspe->running);
+		}
+		{
+			u16 buf_ptr = le16_to_cpu(hdspe->reg.status0.common.BUF_PTR);
+			if (buf_ptr != last_buf_ptr) {
+				last_buf_ptr = buf_ptr;
+				last_buf_ptr_jiffies = jiffies;
+			} else if (last_buf_ptr_jiffies &&
+					time_after(jiffies, last_buf_ptr_jiffies + HZ)) {
+				dev_warn_ratelimited(hdspe->card->dev,
+					"%s: BUF_PTR stuck at %u for >=1s while audio IRQs occur (irq_count=%d).\n",
+					__func__, buf_ptr, hdspe->irq_count);
+				last_buf_ptr_jiffies = jiffies;
+			}
+		}
+		#endif /* DEBUG_IRQ_COUNT */
 		
 		hdspe_update_frame_count(hdspe);
 
