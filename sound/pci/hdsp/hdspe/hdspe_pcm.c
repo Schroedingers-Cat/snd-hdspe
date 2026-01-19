@@ -105,9 +105,9 @@ u32 hdspe_period_size(struct hdspe *hdspe)
 	 * it corresponds to 32 samples.
 	 */
 	if ((7 == n) && hdspe_is_raydat_or_aio(hdspe))
-		n = -1;
+		return 32;
 
-	return 64 << n; // 1 << (n + 6);
+	return 64U << n; // 1 << (n + 6);
 }
 
 /* Sets hdspe->period_size and hdspe->hw_buffer_size according to the
