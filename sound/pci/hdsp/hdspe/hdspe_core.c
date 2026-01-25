@@ -454,6 +454,10 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	dev_info(card->dev,
 		"PCI vendor %04x, device %04x, pci revision id %x\n",
 		pci->vendor, pci->device, hdspe->pci_rev_id);
+#ifdef SND_HDSPE_GIT_HASH
+	dev_info(card->dev, "driver version %s (git %s)\n",
+		SND_HDSPE_VERSION, SND_HDSPE_GIT_HASH);
+#endif
 	
 	strcpy(card->mixername, "RME HDSPe");
 	strcpy(card->driver, "HDSPe");

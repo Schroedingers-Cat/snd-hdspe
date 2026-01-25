@@ -1,5 +1,10 @@
 obj-m += sound/pci/hdsp/
 
+# Embed git commit hash for version tracking
+GIT_HASH := $(shell git -C $(src) rev-parse --short HEAD 2>/dev/null || echo "unknown")
+ccflags-y += -DSND_HDSPE_GIT_HASH='"$(GIT_HASH)"'
+ccflags-y += -DSND_HDSPE_VERSION='"$(PACKAGE_VERSION)"'
+
 # The runtime of DKMS has this environment variable to build for several versions of Linux kernel.
 ifndef KERNELRELEASE
 KERNELRELEASE := $(shell uname -r)
