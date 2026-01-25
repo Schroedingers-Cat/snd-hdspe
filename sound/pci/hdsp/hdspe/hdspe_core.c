@@ -451,7 +451,7 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 			PCI_REVISION_ID, &hdspe->pci_rev_id);
 	hdspe->vendor_id = pci->vendor;
 
-	dev_dbg(card->dev,
+	dev_info(card->dev,
 		"PCI vendor %04x, device %04x, pci revision id %x\n",
 		pci->vendor, pci->device, hdspe->pci_rev_id);
 	
