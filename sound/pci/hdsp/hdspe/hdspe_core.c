@@ -578,7 +578,7 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	}
 
 	/* Serial number */
-	if (hdspe->io_type != HDSPE_AIO && (pci->vendor == PCI_VENDOR_ID_RME || hdspe->fw_build >= 200))
+	if (snd_hdspe_is_rev2(hdspe))
 		hdspe->serial = snd_hdspe_get_serial_rev2(hdspe);
 	else
 		hdspe->serial = snd_hdspe_get_serial_rev1(hdspe);
