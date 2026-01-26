@@ -395,32 +395,23 @@ static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 	return serial;
 }
 
-/* Get card model. TODO: check against Mac and windows driver */
+/* Get card model. Verified against Windows driver source (Jan 2026). */
 static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const u8 pci_rev_id, const u32 firmware_build)
 {
 	switch (pci_rev_id) {
 	case HDSPE_RAYDAT_REV:
 		return HDSPE_RAYDAT;
 	case HDSPE_AIO_REV:
+		// AIO Pro belongs to the HDSPe rev2 series (Artix FPGA), AIO (non-Pro) is rev1 only.
+		// AIO Pro has vendor=RME and build<200. There is no AIO Pro firmware with
+		// Xilinx vendor ID, so Xilinx vendor = AIO.
+		// Build>=200 with RME vendor = AIO.
+		// See: https://rme-audio.de/downloads/hdspeaio_e.pdf page 39,
+		//      https://www.forum.rme-audio.de/viewtopic.php?id=23315
 		if (pci_vendor_id == PCI_VENDOR_ID_XILINX)
-		{
-			// According to the RME HDSPe AIO manual
-			// (https://rme-audio.de/downloads/hdspeaio_e.pdf, page 39), the Vendor
-			// ID of the card is not RME (0x1d18) but Xilinx (0x10ee). Since AIO
-			// and AIO Pro use 0xd4 as firmware_rev, we can only discriminate using
-			// pci_vendor_id
-			// Another source: https://www.forum.rme-audio.de/viewtopic.php?id=23315
 			return HDSPE_AIO;
-		}
-		if (firmware_build == 14 || firmware_build == 200 || firmware_build == 201)
-		{
+		if (firmware_build >= 200)
 			return HDSPE_AIO;
-		}
-		if (firmware_build == 23 || firmware_build == 108)
-		{
-			// This is for completeness
-			return HDSPE_AIO_PRO;
-		}
 		return HDSPE_AIO_PRO;
 	case HDSPE_MADIFACE_REV:
 		return HDSPE_MADIFACE;
