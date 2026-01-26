@@ -142,6 +142,13 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 		hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
 		hdspe->irq_count++;
 
+		// Log on first IRQ to confirm card is working
+		if (hdspe->irq_count == 1) {
+			dev_info(hdspe->card->dev, "First audio IRQ received: LAT=%u BUF_ID=%u BUF_PTR=%u\n",
+			         hdspe->reg.control.common.LAT, hdspe->reg.status0.common.BUF_ID,
+			         le16_to_cpu(hdspe->reg.status0.common.BUF_PTR));
+		}
+
 		#ifdef DEBUG_IRQ_COUNT
 		if (__ratelimit(&hdspe_irq_rs)) {
 			dev_info(hdspe->card->dev,

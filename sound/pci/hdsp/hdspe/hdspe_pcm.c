@@ -590,10 +590,15 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	if (!hdspe->running && running)
+	if (!hdspe->running && running) {
+		dev_info(hdspe->card->dev, "Audio streaming started: %s, period=%u, rate=%u, irq_count=%d\n",
+		         substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture", hdspe->period_size,
+		         hdspe_read_system_sample_rate(hdspe), hdspe->irq_count);
 		hdspe_start_audio(hdspe);
-	else if (hdspe->running && !running)
+	} else if (hdspe->running && !running) {
+		dev_info(hdspe->card->dev, "Audio streaming stopped: irq_count=%d\n", hdspe->irq_count);
 		hdspe_stop_audio(hdspe);
+	}
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
 
