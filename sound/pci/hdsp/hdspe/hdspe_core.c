@@ -103,6 +103,35 @@ static const struct pci_device_id snd_hdspe_ids[] = {
 MODULE_DEVICE_TABLE(pci, snd_hdspe_ids);
 
 
+static u8 snd_hdspe_read_flash_byte(struct hdspe *hdspe, const u32 addr)
+{
+	u32 cmd = addr << 8;
+	if (hdspe->pci_rev_id >= HDSPE_AES_REV)
+		cmd |= 0x50000000;
+
+	// Write cmd into flash write register, later poll answer from read register with slight delay
+	hdspe_write(hdspe, HDSPE_WR_FLASH, cmd);
+
+	for (int i = 0; i < 2000; i++) {
+		const u32 status = le32_to_cpu(hdspe_read(hdspe, HDSPE_RD_FLASH));
+		if (!(status & 0x100))
+			return (u8)(status & 0xff);
+		udelay(10);
+	}
+
+	return 0;
+}
+
+static bool snd_hdspe_is_rev2(const struct hdspe *hdspe)
+{
+	// AIO Pro is a special case (only rev 2 board with firmware build below 200)
+	if (hdspe->pci_rev_id == HDSPE_AIO_REV)
+		return hdspe->vendor_id == PCI_VENDOR_ID_RME && hdspe->fw_build < 200;
+
+	// This is the default case, a firmware build starting from 200 with RME or Xilinx vendor ID indicates a rev 2 card
+	return (hdspe->vendor_id == PCI_VENDOR_ID_RME || hdspe->vendor_id == PCI_VENDOR_ID_XILINX) && hdspe->fw_build >= 200;
+}
+
 /* interrupt handler */
 static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 {
@@ -350,23 +379,36 @@ static void hdspe_terminate(struct hdspe* hdspe)
 /* get card serial number - for older cards */
 static uint32_t snd_hdspe_get_serial_rev1(struct hdspe* hdspe)
 {
-	uint32_t serial = 0;
 	if (hdspe->io_type == HDSPE_MADIFACE)
 		return 0;
-	
-	serial = (hdspe_read(hdspe, HDSPE_midiStatusIn0)>>8) & 0xFFFFFF;
-	/* id contains either a user-provided value or the default
-	 * NULL. If it's the default, we're safe to
-	 * fill card->id with the serial number.
-	 *
-	 * If the serial number is 0xFFFFFF, then we're dealing with
-	 * an old PCI revision that comes without a sane number. In
-	 * this case, we don't set card->id to avoid collisions
-	 * when running with multiple cards.
-	 */
-	if (id[hdspe->dev] || serial == 0xFFFFFF) {
-		serial = 0;
+
+	uint32_t serial = 0;
+	dev_dbg(hdspe->card->dev, "Getting rev 1 serial");
+
+	for (int i = 0; i < 8; i++) {
+		const u32 flash_size = 0x80000;
+		const u8 c = snd_hdspe_read_flash_byte(hdspe, flash_size + 9 + i);
+		if (c >= '0' && c <= '9')
+			serial = serial * 10 + (c - '0');
 	}
+
+	if (!serial) {
+		const u32 tmp = le32_to_cpu(hdspe_read(hdspe, HDSPE_midiStatusIn0));
+		serial = (tmp >> 8) & 0xFFFFFF;
+		/* id contains either a user-provided value or the default
+		 * NULL. If it's the default, we're safe to
+		 * fill card->id with the serial number.
+		 *
+		 * If the serial number is 0xFFFFFF, then we're dealing with
+		 * an old PCI revision that comes without a sane number. In
+		 * this case, we don't set card->id to avoid collisions
+		 * when running with multiple cards.
+		 */
+		if (id[hdspe->dev] || serial == 0xFFFFFF)
+			serial = 0;
+		dev_dbg(hdspe->card->dev, "Got serial via old MIDI status");
+	}
+
 	return serial;
 }
 
@@ -374,6 +416,7 @@ static uint32_t snd_hdspe_get_serial_rev1(struct hdspe* hdspe)
 static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 {
 	uint32_t serial = 0;
+	dev_dbg(hdspe->card->dev, "Getting rev 2 serial");
 
 	// TODO: test endianness issues
 	/* get the serial number from the RD_BARCODE{0,1} registers */
