@@ -191,17 +191,27 @@ void hdspe_update_frame_count(struct hdspe* hdspe)
 
 #ifdef DEBUG_FRAME_COUNT
 	{
+		static DEFINE_RATELIMIT_STATE(hdspe_fc_rs, HZ, 1);
 		static u64 last_frame_count =0;
 		static u64 last_hw_pointer =0;
+		u64 delta;
 		hw_pointer = hdspe_hw_pointer(hdspe);
-		dev_dbg(hdspe->card->dev, "%s: hw_pointer=%u (delta %llu), frame_count=%llu (delta=%llu)\n",
-			__func__,
-			hw_pointer,
-			hw_pointer > last_hw_pointer
+		delta = hw_pointer > last_hw_pointer
 			? hw_pointer - last_hw_pointer
-			: (hw_pointer + hdspe->hw_buffer_size) - last_hw_pointer,
-			hdspe->frame_count,
-			hdspe->frame_count - last_frame_count);
+			: (hw_pointer + hdspe->hw_buffer_size) - last_hw_pointer;
+		if (delta > (u64)hdspe->period_size * 4) {
+			dev_warn_ratelimited(hdspe->card->dev,
+				"%s: hw_pointer jump delta=%llu > 4*period_size=%u (period_size=%u, hw_buf=%u).\n",
+				__func__, delta, hdspe->period_size * 4,
+				hdspe->period_size, hdspe->hw_buffer_size);
+		}
+		if (__ratelimit(&hdspe_fc_rs)) {
+			dev_info(hdspe->card->dev,
+				"%s: hw_pointer=%u (delta %llu), frame_count=%llu (delta=%llu)\n",
+				__func__, hw_pointer, delta,
+				hdspe->frame_count,
+				hdspe->frame_count - last_frame_count);
+		}
 		last_frame_count = hdspe->frame_count;
 		last_hw_pointer = hw_pointer;
 	}
@@ -573,8 +583,15 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	// Since we have audio interrupts enabled all the time, 
+	// Since we have audio interrupts enabled all the time,
 	// no explicit start or stop is necessary
+	if (!hdspe->running && running) {
+		dev_info(hdspe->card->dev, "Audio streaming started: %s, period=%u, rate=%u, irq_count=%d\n",
+		         substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture", hdspe->period_size,
+		         hdspe_read_system_sample_rate(hdspe), hdspe->irq_count);
+	} else if (hdspe->running && !running) {
+		dev_info(hdspe->card->dev, "Audio streaming stopped: irq_count=%d\n", hdspe->irq_count);
+	}
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
 
@@ -621,7 +638,7 @@ static const struct snd_pcm_hardware snd_hdspe_capture_subinfo = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
-		 SNDRV_PCM_INFO_SYNC_START | 
+		 SNDRV_PCM_INFO_SYNC_START |
 		 SNDRV_PCM_INFO_RESUME),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,

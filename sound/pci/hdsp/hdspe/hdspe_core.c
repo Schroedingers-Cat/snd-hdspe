@@ -103,6 +103,35 @@ static const struct pci_device_id snd_hdspe_ids[] = {
 MODULE_DEVICE_TABLE(pci, snd_hdspe_ids);
 
 
+static u8 snd_hdspe_read_flash_byte(struct hdspe *hdspe, const u32 addr)
+{
+	u32 cmd = addr << 8;
+	if (hdspe->pci_rev_id >= HDSPE_AES_REV)
+		cmd |= 0x50000000;
+
+	// Write cmd into flash write register, later poll answer from read register with slight delay
+	hdspe_write(hdspe, HDSPE_WR_FLASH, cmd);
+
+	for (int i = 0; i < 2000; i++) {
+		const u32 status = le32_to_cpu(hdspe_read(hdspe, HDSPE_RD_FLASH));
+		if (!(status & 0x100))
+			return (u8)(status & 0xff);
+		udelay(10);
+	}
+
+	return 0;
+}
+
+static bool snd_hdspe_is_rev2(const struct hdspe *hdspe)
+{
+	// AIO Pro is a special case (only rev 2 board with firmware build below 200)
+	if (hdspe->pci_rev_id == HDSPE_AIO_REV)
+		return hdspe->vendor_id == PCI_VENDOR_ID_RME && hdspe->fw_build < 200;
+
+	// This is the default case, a firmware build starting from 200 with RME or Xilinx vendor ID indicates a rev 2 card
+	return (hdspe->vendor_id == PCI_VENDOR_ID_RME || hdspe->vendor_id == PCI_VENDOR_ID_XILINX) && hdspe->fw_build >= 200;
+}
+
 /* interrupt handler */
 static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 {
@@ -113,6 +142,12 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 		dev_dbg(hdspe->card->dev, "Interrupt #%d received\n", hdspe->irq_count);
 	}
 	#endif /*TIME_INTERRUPT_INTERVAL*/
+
+	#ifdef DEBUG_IRQ_COUNT
+	static DEFINE_RATELIMIT_STATE(hdspe_irq_rs, HZ, 1);
+	static u16 last_buf_ptr;
+	static unsigned long last_buf_ptr_jiffies;
+	#endif
 
 	hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
 
@@ -147,7 +182,39 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 
 		hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
 		hdspe->irq_count++;
-		
+
+		// Log on first IRQ to confirm card is working
+		if (hdspe->irq_count == 1) {
+			dev_info(hdspe->card->dev, "First audio IRQ received: LAT=%u BUF_ID=%u BUF_PTR=%u\n",
+			         hdspe->reg.control.common.LAT, hdspe->reg.status0.common.BUF_ID,
+			         le16_to_cpu(hdspe->reg.status0.common.BUF_PTR));
+		}
+
+		#ifdef DEBUG_IRQ_COUNT
+		if (__ratelimit(&hdspe_irq_rs)) {
+			dev_info(hdspe->card->dev,
+				"%s: irq_count=%d LAT=%u BUF_ID=%u BUF_PTR=%u running=%d\n",
+				__func__, hdspe->irq_count,
+				hdspe->reg.control.common.LAT,
+				hdspe->reg.status0.common.BUF_ID,
+				le16_to_cpu(hdspe->reg.status0.common.BUF_PTR),
+				hdspe->running);
+		}
+		{
+			u16 buf_ptr = le16_to_cpu(hdspe->reg.status0.common.BUF_PTR);
+			if (buf_ptr != last_buf_ptr) {
+				last_buf_ptr = buf_ptr;
+				last_buf_ptr_jiffies = jiffies;
+			} else if (last_buf_ptr_jiffies &&
+					time_after(jiffies, last_buf_ptr_jiffies + HZ)) {
+				dev_warn_ratelimited(hdspe->card->dev,
+					"%s: BUF_PTR stuck at %u for >=1s while audio IRQs occur (irq_count=%d).\n",
+					__func__, buf_ptr, hdspe->irq_count);
+				last_buf_ptr_jiffies = jiffies;
+			}
+		}
+		#endif /* DEBUG_IRQ_COUNT */
+
 		hdspe_update_frame_count(hdspe);
 
 		if (hdspe->tco) {
@@ -350,23 +417,36 @@ static void hdspe_terminate(struct hdspe* hdspe)
 /* get card serial number - for older cards */
 static uint32_t snd_hdspe_get_serial_rev1(struct hdspe* hdspe)
 {
-	uint32_t serial = 0;
 	if (hdspe->io_type == HDSPE_MADIFACE)
 		return 0;
-	
-	serial = (hdspe_read(hdspe, HDSPE_midiStatusIn0)>>8) & 0xFFFFFF;
-	/* id contains either a user-provided value or the default
-	 * NULL. If it's the default, we're safe to
-	 * fill card->id with the serial number.
-	 *
-	 * If the serial number is 0xFFFFFF, then we're dealing with
-	 * an old PCI revision that comes without a sane number. In
-	 * this case, we don't set card->id to avoid collisions
-	 * when running with multiple cards.
-	 */
-	if (id[hdspe->dev] || serial == 0xFFFFFF) {
-		serial = 0;
+
+	uint32_t serial = 0;
+	dev_dbg(hdspe->card->dev, "Getting rev 1 serial");
+
+	for (int i = 0; i < 8; i++) {
+		const u32 flash_size = 0x80000;
+		const u8 c = snd_hdspe_read_flash_byte(hdspe, flash_size + 9 + i);
+		if (c >= '0' && c <= '9')
+			serial = serial * 10 + (c - '0');
 	}
+
+	if (!serial) {
+		const u32 tmp = le32_to_cpu(hdspe_read(hdspe, HDSPE_midiStatusIn0));
+		serial = (tmp >> 8) & 0xFFFFFF;
+		/* id contains either a user-provided value or the default
+		 * NULL. If it's the default, we're safe to
+		 * fill card->id with the serial number.
+		 *
+		 * If the serial number is 0xFFFFFF, then we're dealing with
+		 * an old PCI revision that comes without a sane number. In
+		 * this case, we don't set card->id to avoid collisions
+		 * when running with multiple cards.
+		 */
+		if (id[hdspe->dev] || serial == 0xFFFFFF)
+			serial = 0;
+		dev_dbg(hdspe->card->dev, "Got serial via old MIDI status");
+	}
+
 	return serial;
 }
 
@@ -374,6 +454,7 @@ static uint32_t snd_hdspe_get_serial_rev1(struct hdspe* hdspe)
 static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 {
 	uint32_t serial = 0;
+	dev_dbg(hdspe->card->dev, "Getting rev 2 serial");
 
 	// TODO: test endianness issues
 	/* get the serial number from the RD_BARCODE{0,1} registers */
@@ -395,39 +476,30 @@ static uint32_t snd_hdspe_get_serial_rev2(struct hdspe* hdspe)
 	return serial;
 }
 
-/* Get card model. TODO: check against Mac and windows driver */
+/* Get card model. Verified against Windows driver source (Jan 2026). */
 static enum hdspe_io_type hdspe_get_io_type(const int pci_vendor_id, const u8 pci_rev_id, const u32 firmware_build)
 {
 	switch (pci_rev_id) {
 	case HDSPE_RAYDAT_REV:
 		return HDSPE_RAYDAT;
 	case HDSPE_AIO_REV:
+		// AIO Pro belongs to the HDSPe rev2 series (Artix FPGA), AIO (non-Pro) is rev1 only.
+		// AIO Pro has vendor=RME and build<200. There is no AIO Pro firmware with
+		// Xilinx vendor ID, so Xilinx vendor = AIO.
+		// Build>=200 with RME vendor = AIO.
+		// See: https://rme-audio.de/downloads/hdspeaio_e.pdf page 39,
+		//      https://www.forum.rme-audio.de/viewtopic.php?id=23315
 		if (pci_vendor_id == PCI_VENDOR_ID_XILINX)
-		{
-			// According to the RME HDSPe AIO manual
-			// (https://rme-audio.de/downloads/hdspeaio_e.pdf, page 39), the Vendor
-			// ID of the card is not RME (0x1d18) but Xilinx (0x10ee). Since AIO
-			// and AIO Pro use 0xd4 as firmware_rev, we can only discriminate using
-			// pci_vendor_id
-			// Another source: https://www.forum.rme-audio.de/viewtopic.php?id=23315
 			return HDSPE_AIO;
-		}
-		if (firmware_build == 14 || firmware_build == 200 || firmware_build == 201)
-		{
+		if (firmware_build >= 200)
 			return HDSPE_AIO;
-		}
-		if (firmware_build == 23 || firmware_build == 108)
-		{
-			// This is for completeness
-			return HDSPE_AIO_PRO;
-		}
 		return HDSPE_AIO_PRO;
 	case HDSPE_MADIFACE_REV:
 		return HDSPE_MADIFACE;
 	case HDSPE_MADI_REV:
 		return HDSPE_MADI;
 	case HDSPE_AES_REV:
-		return HDSPE_AES_REV;
+		return HDSPE_AES;
 	default:
 		if (pci_rev_id >= 0xe6 && pci_rev_id <= 0xea) {
 			return HDSPE_AES;
@@ -485,10 +557,14 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 			PCI_REVISION_ID, &hdspe->pci_rev_id);
 	hdspe->vendor_id = pci->vendor;
 
-	dev_dbg(card->dev,
+	dev_info(card->dev,
 		"PCI vendor %04x, device %04x, pci revision id %x\n",
 		pci->vendor, pci->device, hdspe->pci_rev_id);
-	
+#ifdef SND_HDSPE_GIT_HASH
+	dev_info(card->dev, "driver version %s (git %s)\n",
+		SND_HDSPE_VERSION, SND_HDSPE_GIT_HASH);
+#endif
+
 	strcpy(card->mixername, "RME HDSPe");
 	strcpy(card->driver, "HDSPe");
 
@@ -567,7 +643,7 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	}
 
 	/* Serial number */
-	if (hdspe->io_type != HDSPE_AIO && (pci->vendor == PCI_VENDOR_ID_RME || hdspe->fw_build >= 200))
+	if (snd_hdspe_is_rev2(hdspe))
 		hdspe->serial = snd_hdspe_get_serial_rev2(hdspe);
 	else
 		hdspe->serial = snd_hdspe_get_serial_rev1(hdspe);
@@ -613,7 +689,7 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 
 static void hdspe_work_stop(struct hdspe *hdspe)
 {
-	if (hdspe->port) 
+	if (hdspe->port)
 	{
 		hdspe_stop_interrupts(hdspe);
 		cancel_work_sync(&hdspe->midi_work);
@@ -623,7 +699,7 @@ static void hdspe_work_stop(struct hdspe *hdspe)
 
 static void hdspe_deinit_all(struct hdspe *hdspe)
 {
-	if (hdspe->port) 
+	if (hdspe->port)
 	{
 		hdspe_terminate(hdspe);
 		hdspe_terminate_tco(hdspe);
@@ -790,8 +866,8 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 
 	/* (5) Restart the chip or hardware */
 	/* Restart any halted hardware or operations */
-	// Technically, this redundantly sets START and IE_AUDIO in 
-	// reg.control.common to true, which already happened via 
+	// Technically, this redundantly sets START and IE_AUDIO in
+	// reg.control.common to true, which already happened via
 	// hdspe->suspendStateRegs
 	hdspe_start_interrupts(hdspe);
 

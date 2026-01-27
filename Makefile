@@ -29,6 +29,12 @@ DEBUG ?= 0
 CONFIG_SND_DEBUG ?= 0
 WARNINGS ?= 0
 
+# Embed git commit hash for version tracking
+GIT_HASH := $(shell git -C $(src) rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_DESCRIBE := $(shell git -C $(src) describe --always --dirty 2>/dev/null || echo "unknown")
+subdir-ccflags-y += -DSND_HDSPE_GIT_HASH='"$(GIT_HASH)"'
+subdir-ccflags-y += -DSND_HDSPE_VERSION='"$(GIT_DESCRIBE)"'
+
 EXTRA_CFLAGS += $(if $(filter 1,$(DEBUG)),-DDEBUG,)
 EXTRA_CFLAGS += $(if $(filter 1,$(CONFIG_SND_DEBUG)),-DCONFIG_SND_DEBUG,)
 # W can only be W=1/2/3
