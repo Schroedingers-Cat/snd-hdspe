@@ -36,6 +36,7 @@
 
 #include "hdspe.h"
 #include "hdspe_core.h"
+#include "hdspe_version.h"
 
 #include <linux/init.h>
 #include <linux/module.h>

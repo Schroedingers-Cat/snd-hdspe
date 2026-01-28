@@ -7,6 +7,8 @@ modules.order
 Module.symvers
 dkms.conf
 
+# Generated files
+sound/pci/hdsp/hdspe/hdspe_version.h
 *.cmd
 .module-common.o
 *.o
