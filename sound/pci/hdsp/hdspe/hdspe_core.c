@@ -750,6 +750,8 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 
 	/* (2) Reinitialize the chip */
 	/* Perform any necessary reinitialization steps after resume */
+	pci_set_power_state(dev, PCI_D0);
+	pci_restore_state(dev);
 	/* Unclear what HDSPe needs to have reinitialized? */
 	/* Init all HDSPe things like TCO, methods, tables, registers ... */
 	hdspe_work_start(hdspe);
