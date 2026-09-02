@@ -726,6 +726,8 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 
 	/* (5) Enter low-power state */
 	/* Place the hardware into a low-power mode, not sure if that is available for HDSPe? */
+	pci_save_state(dev);
+	pci_set_power_state(dev, PCI_D3hot);
 
 	dev_info(hdspe->card->dev, "HDSPe suspend complete\n");
 	return 0;
