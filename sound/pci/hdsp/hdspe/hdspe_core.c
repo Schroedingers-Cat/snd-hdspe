@@ -718,6 +718,8 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Stop hardware operations */
+	/* Suspend all active PCM streams */
+	snd_pcm_suspend_all(hdspe->pcm);
 	/* Stop interrupts and halt any ongoing operations */
 	hdspe_work_stop(hdspe);
 	// snd_hdspe_deinit_all(hdspe);
