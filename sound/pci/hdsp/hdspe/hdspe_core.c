@@ -282,6 +282,7 @@ static int snd_hdspe_create_alsa_devices(struct snd_card *card,
 
 	dev_dbg(card->dev, "Initializing complete?\n");
 
+	// TODO: This is redundant with snd_hdspe_probe which calls snd_card_register() again
 	err = snd_card_register(card);
 	if (err < 0) {
 		dev_err(card->dev, "error registering card.\n");
