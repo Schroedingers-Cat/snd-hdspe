@@ -362,43 +362,6 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 		return err;
 	}
 
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		/* Enable only the required DMA channels. */
-		for (i = 0; i < params_channels(params); ++i) {
-			int c = hdspe->channel_map_out[i];
-
-			if (c < 0)
-				continue;      /* just make sure */
-			hdspe_set_channel_dma_addr(hdspe, substream,
-						   HDSPE_pageAddressBufferOut,
-						   c);
-			snd_hdspe_enable_out(hdspe, c, 1);
-		}
-
-		hdspe->playback_buffer =
-			(unsigned char *) substream->runtime->dma_area;
-		dev_dbg(hdspe->card->dev,
-			"Allocated sample buffer for playback at %p\n",
-				hdspe->playback_buffer);
-	} else {
-		for (i = 0; i < params_channels(params); ++i) {
-			int c = hdspe->channel_map_in[i];
-
-			if (c < 0)
-				continue;
-			hdspe_set_channel_dma_addr(hdspe, substream,
-						   HDSPE_pageAddressBufferIn,
-						   c);
-			snd_hdspe_enable_in(hdspe, c, 1);
-		}
-
-		hdspe->capture_buffer =
-			(unsigned char *) substream->runtime->dma_area;
-		dev_dbg(hdspe->card->dev,
-			"Allocated sample buffer for capture at %p\n",
-				hdspe->capture_buffer);
-	}
-
 	/*
 	dev_dbg(hdspe->card->dev,
 	"Allocated sample buffer for %s at 0x%08X\n",
@@ -586,6 +549,30 @@ _ok:
 
 static int snd_hdspe_prepare(struct snd_pcm_substream *substream)
 {
+	struct hdspe *hdspe = snd_pcm_substream_chip(substream);
+	const struct snd_pcm_runtime *runtime = substream->runtime;
+	const bool playback = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
+	const unsigned int reg = playback ? HDSPE_pageAddressBufferOut : HDSPE_pageAddressBufferIn;
+	const s8 *map = playback ? hdspe->channel_map_out : hdspe->channel_map_in;
+
+	/* Reprogram per-channel DMA addresses. Redundant after hw_params on initial setup, but required on resume from suspend where the FPGA has lost this state. */
+	for (int i = 0; i < runtime->channels; ++i) {
+		const int c = map[i];
+		if (c < 0)
+			continue;
+
+		hdspe_set_channel_dma_addr(hdspe, substream, reg, c);
+		if (playback)
+			snd_hdspe_enable_out(hdspe, c, 1);
+		else
+			snd_hdspe_enable_in(hdspe, c, 1);
+	}
+
+	if (playback)
+		hdspe->playback_buffer = (unsigned char *) runtime->dma_area;
+	else
+		hdspe->capture_buffer = (unsigned char *) runtime->dma_area;
+
 	return 0;
 }
 
