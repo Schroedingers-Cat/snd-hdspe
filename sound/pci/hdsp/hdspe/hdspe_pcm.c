@@ -536,7 +536,7 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	// Since we have audio interrupts enabled all the time, 
+	// Since we have audio interrupts enabled all the time,
 	// no explicit start or stop is necessary
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
@@ -581,7 +581,6 @@ static const struct snd_pcm_hardware snd_hdspe_playback_subinfo = {
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
 		 SNDRV_PCM_INFO_SYNC_START |
-		 SNDRV_PCM_INFO_RESUME |
 		 SNDRV_PCM_INFO_DOUBLE),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,	
@@ -608,8 +607,7 @@ static const struct snd_pcm_hardware snd_hdspe_capture_subinfo = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
-		 SNDRV_PCM_INFO_SYNC_START | 
-		 SNDRV_PCM_INFO_RESUME),
+		 SNDRV_PCM_INFO_SYNC_START),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,
 	.rates = (SNDRV_PCM_RATE_32000 |
