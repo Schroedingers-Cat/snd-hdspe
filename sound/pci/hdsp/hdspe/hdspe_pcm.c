@@ -488,6 +488,8 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	running = hdspe->running;
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	// Takashi Iwai's ALSA driver guide suggests to keep the RESUME case for compatibility even if the
+	// SNDRV_PCM_INFO_RESUME flag is not set.
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		running |= 1 << substream->stream;
