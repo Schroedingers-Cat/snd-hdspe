@@ -1017,6 +1017,17 @@ struct hdspe {
 	u32 period_size;            /* current period size, in nr of samples */
 };
 
+/* ------------------------------------------------------- */
+
+/*
+ * Returns true if the card is a RayDAT / AIO / AIO Pro
+ */
+static inline bool hdspe_is_raydat_or_aio(struct hdspe *hdspe)
+{
+	return ((HDSPE_AIO == hdspe->io_type) ||
+		(HDSPE_RAYDAT == hdspe->io_type) ||
+		(HDSPE_AIO_PRO == hdspe->io_type));
+}
 
 /**
  * Write/read to/from HDSPE with Adresses in Bytes
@@ -1051,7 +1062,8 @@ void hdspe_write_control(struct hdspe* hdspe)
 static inline __attribute__((always_inline))
 void hdspe_write_settings(struct hdspe* hdspe)
 {
-	hdspe_write(hdspe, HDSPE_WR_SETTINGS, hdspe->reg.settings.raw);
+	if(hdspe_is_raydat_or_aio(hdspe))
+		hdspe_write(hdspe, HDSPE_WR_SETTINGS, hdspe->reg.settings.raw);
 }
 
 static inline __attribute__((always_inline))

@@ -82,18 +82,6 @@ static inline void snd_hdspe_enable_out(struct hdspe * hdspe, int i, int v)
 	hdspe_write(hdspe, HDSPE_outputEnableBase + (4 * i), v);
 }
 
-/* ------------------------------------------------------- */
-
-/**
- * Returns true if the card is a RayDAT / AIO / AIO Pro 
- */
-static inline bool hdspe_is_raydat_or_aio(struct hdspe *hdspe)
-{
-	return ((HDSPE_AIO == hdspe->io_type) ||
-		(HDSPE_RAYDAT == hdspe->io_type) ||
-		(HDSPE_AIO_PRO == hdspe->io_type));
-}
-
 /* return period size in samples per period */
 u32 hdspe_period_size(struct hdspe *hdspe)
 {
