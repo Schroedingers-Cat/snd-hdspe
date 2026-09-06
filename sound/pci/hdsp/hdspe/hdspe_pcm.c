@@ -265,7 +265,6 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 {
 	struct hdspe *hdspe = snd_pcm_substream_chip(substream);
 	int err;
-	int i;
 	pid_t this_pid;
 	pid_t other_pid;
 
