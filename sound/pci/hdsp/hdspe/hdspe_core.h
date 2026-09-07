@@ -1277,6 +1277,10 @@ extern bool hdspe_tco_notify_status_change(struct hdspe* hdspe);
 /* Set "app" sample rate on TCO module, when sound card sample rate changes. */
 extern void hdspe_tco_set_app_sample_rate(struct hdspe* hdspe);
 
+/* Write settings to TCO module */
+extern void hdspe_tco_write_settings(struct hdspe* hdspe);
+
+
 /**
  * hdspe_common.c
  */

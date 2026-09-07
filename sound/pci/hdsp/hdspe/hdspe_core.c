@@ -775,6 +775,8 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	hdspe_write_control(hdspe);
 	hdspe_write_pll_freq(hdspe);
 	hdspe_mixer_update_channel_map(hdspe);
+	if (hdspe->tco)
+		hdspe_tco_write_settings(hdspe);
 
 	/* (5) Restart the chip or hardware */
 	/* Restart any halted hardware or operations */
