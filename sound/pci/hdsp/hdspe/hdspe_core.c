@@ -221,14 +221,15 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
  * are enabled when the MIDI devices are created. */
 static void hdspe_start_interrupts(struct hdspe* hdspe)
 {
-	if (hdspe->tco) {
-		/* TCO MTC port is always the last one */
-		struct hdspe_midi *m = &hdspe->midi[hdspe->midiPorts-1];
-	
-		dev_dbg(hdspe->card->dev,
-			"%s: enabling TCO MTC input port %d '%s'.\n",
-			__func__, m->id, m->portname);
-		hdspe->reg.control.raw |= m->ie;	
+	/* Re-enable all MIDI interrupts for ports with open input */
+	for (int i = 0; i < hdspe->midiPorts; i++) {
+		if (hdspe->midi[i].input) {
+			dev_dbg(hdspe->card->dev,
+			        "%s: enabling MIDI input port %d '%s'.\n",
+			        __func__, hdspe->midi[i].id, hdspe->midi[i].portname);
+
+			hdspe->reg.control.raw |= hdspe->midi[i].ie;
+		}
 	}
 
 	hdspe->reg.control.common.START    = true;
