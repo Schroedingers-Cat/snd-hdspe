@@ -67,6 +67,7 @@ install: all remove-mainlined
 	-sudo rm -rf $(DKMS_SRC_PATH)
 	sudo mkdir -p $(DKMS_SRC_PATH)
 	sudo cp -r Makefile dkms.conf* sound $(DKMS_SRC_PATH)/
+	-sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE) 2>/dev/null || true
 	-sudo dkms add -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) 2>/dev/null || true
 	sudo dkms build -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE)
 	sudo dkms install -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE)
