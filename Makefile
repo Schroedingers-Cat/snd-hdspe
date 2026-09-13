@@ -56,7 +56,9 @@ remove:
 	sudo rmmod $(PACKAGE_NAME)
 
 remove-mainlined:
-	-sudo rmmod snd-hdspm
+	@if lsmod | grep -q '^snd_hdspm '; then \
+		sudo rmmod snd_hdspm; \
+	fi
 
 # --- DKMS Convenience Targets for Manual Installation ---
 # These targets are helpful for developers.
