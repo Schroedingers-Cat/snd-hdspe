@@ -591,6 +591,17 @@ static void hdspe_work_stop(struct hdspe *hdspe)
 		hdspe_stop_interrupts(hdspe);
 		cancel_work_sync(&hdspe->midi_work);
 		cancel_work_sync(&hdspe->status_work);
+
+		/* Stop all MIDI timers */
+		for (int i = 0; i < hdspe->midiPorts; i++) {
+			if (hdspe->midi[i].istimer) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+				timer_delete_sync(&hdspe->midi[i].timer);
+#else
+				del_timer_sync(&hdspe->midi[i].timer);
+#endif
+			}
+		}
 	}
 }
 
@@ -779,6 +790,12 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	// reg.control.common to true, which already happened via 
 	// hdspe->suspendStateRegs
 	hdspe_start_interrupts(hdspe);
+	/* Re-arm all MIDI timers that were stopped in snd_hdspe_suspend */
+	for (int i = 0; i < hdspe->midiPorts; i++) {
+		if (hdspe->midi[i].istimer) {
+			mod_timer(&hdspe->midi[i].timer, 1 + jiffies);
+		}
+	}
 
 	/* (6) Return ALSA to full power state */
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
