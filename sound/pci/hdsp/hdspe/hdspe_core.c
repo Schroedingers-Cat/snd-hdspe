@@ -718,7 +718,9 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	/* Save the necessary register values in hdspe struct */
 	spin_lock_irq(&hdspe->lock);
 	// without suspendStateRegs, it's 104e9 vs 104c8 for the control register -> because of the interrupts (START & IE_AUDIO)
-	hdspe->suspendStateRegs = hdspe->reg;
+	hdspe->suspendStateRegs.control = hdspe->reg.control;
+	hdspe->suspendStateRegs.pll_freq = hdspe->reg.pll_freq;
+	hdspe->suspendStateRegs.settings = hdspe->reg.settings;
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Stop hardware operations */
@@ -772,7 +774,9 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* (3) Restore saved register values */
 	/* Restore the register values saved during suspend */
 	spin_lock_irq(&hdspe->lock);
-	hdspe->reg = hdspe->suspendStateRegs;
+	hdspe->reg.control = hdspe->suspendStateRegs.control;
+	hdspe->reg.pll_freq = hdspe->suspendStateRegs.pll_freq;
+	hdspe->reg.settings = hdspe->suspendStateRegs.settings;
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Update hardware with restored register values */
