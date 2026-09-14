@@ -709,7 +709,7 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 		return -ENODEV;
 	}
 
-	dev_info(hdspe->card->dev, "HDSPe entering suspend state\n");
+	dev_dbg(hdspe->card->dev, "HDSPe entering suspend state\n");
 
 	/* (2) Change ALSA power state */
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
@@ -734,7 +734,7 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	pci_save_state(dev);
 	pci_set_power_state(dev, PCI_D3hot);
 
-	dev_info(hdspe->card->dev, "HDSPe suspend complete\n");
+	dev_dbg(hdspe->card->dev, "HDSPe suspend complete\n");
 	return 0;
 }
 
@@ -751,7 +751,7 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 		return -ENODEV;
 	}
 
-	dev_info(hdspe->card->dev, "HDSPe entering resume state\n");
+	dev_dbg(hdspe->card->dev, "HDSPe entering resume state\n");
 
 	/* (2) Reinitialize the chip */
 	/* Perform any necessary reinitialization steps after resume */
@@ -800,7 +800,7 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	/* (6) Return ALSA to full power state */
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
 
-	dev_info(&dev->dev, "HDSPe resume complete\n");
+	dev_dbg(&dev->dev, "HDSPe resume complete\n");
 	dev_dbg(&dev->dev, "HDSPe running status:%d\n", hdspe_is_running(hdspe));
 	return 0;
 }
