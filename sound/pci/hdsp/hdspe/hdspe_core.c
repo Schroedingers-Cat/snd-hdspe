@@ -761,15 +761,6 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	 * Still keeping it to be explicit */
 	pci_set_power_state(dev, PCI_D0);
 	pci_restore_state(dev);
-	/* Unclear what HDSPe needs to have reinitialized? */
-	/* Init all HDSPe things like TCO, methods, tables, registers ... */
-	hdspe_work_start(hdspe);
-
-
-	// int err;
-	// err = hdspe_init_all(hdspe);
-	// if (err < 0)
-	// 	return err;
 
 	/* (3) Restore saved register values */
 	/* Restore the register values saved during suspend */
