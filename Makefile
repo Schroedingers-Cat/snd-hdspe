@@ -65,7 +65,9 @@ remove:
 	-@sudo modprobe -r $(PACKAGE_NAME) 2>/dev/null || sudo rmmod $(PACKAGE_NAME) 2>/dev/null || true
 
 remove-mainlined:
-	-sudo rmmod snd-hdspm
+	@if lsmod | grep -q '^snd_hdspm '; then \
+		sudo rmmod snd_hdspm; \
+	fi
 
 # --- DKMS Convenience Targets for Manual Installation ---
 # These targets are helpful for developers.
@@ -76,9 +78,10 @@ install: all remove-mainlined
 	-sudo rm -rf $(DKMS_SRC_PATH)
 	sudo mkdir -p $(DKMS_SRC_PATH)
 	sudo cp -r Makefile dkms.conf* sound $(DKMS_SRC_PATH)/
-	sudo dkms add -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION)
-	sudo dkms build -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION)
-	sudo dkms install -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION)
+	-sudo dkms remove -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE) 2>/dev/null || true
+	-sudo dkms add -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) 2>/dev/null || true
+	sudo dkms build -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE)
+	sudo dkms install -m $(PACKAGE_NAME) -v $(PACKAGE_VERSION) -k $(KERNELRELEASE)
 
 uninstall:
 	@echo "Unloading and removing module from DKMS tree for current kernel $(KERNELRELEASE)..."
