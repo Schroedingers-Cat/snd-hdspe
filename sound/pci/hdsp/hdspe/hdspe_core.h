@@ -1057,6 +1057,22 @@ void hdspe_write_pll_freq(struct hdspe* hdspe)
 	hdspe_write(hdspe, HDSPE_WR_PLL_FREQ, hdspe->reg.pll_freq);
 }
 
+/* Enable/disable DMA for a given out (=playback) channel. */
+static inline __attribute__((always_inline))
+void hdspe_set_dma_out(struct hdspe *hdspe, const int channel, const bool enable_dma)
+{
+	/* Only bit 0 of the written value is relevant. */
+	hdspe_write(hdspe, HDSPE_outputEnableBase + 4 * channel, enable_dma);
+}
+
+/* Enable/disable DMA for a given in (=capture) channel. */
+static inline __attribute__((always_inline))
+void hdspe_set_dma_in(struct hdspe *hdspe, const int channel, const int enable_dma)
+{
+	/* Only bit 0 of the written value is relevant. */
+	hdspe_write(hdspe, HDSPE_inputEnableBase + 4 * channel, enable_dma);
+}
+
 // status0 register is read at every interrupt if audio is started and
 // audio interrupt enabled. We make hdspe_read_status() return the
 // value of the status register at the time of the interrupt in that

@@ -71,17 +71,6 @@ static void hdspe_set_channel_dma_addr(struct hdspe *hdspe,
 	}
 }
 
-/* enable DMA for specific channels, now available for DSP-MADI */
-static inline void snd_hdspe_enable_in(struct hdspe * hdspe, int i, int v)
-{
-	hdspe_write(hdspe, HDSPE_inputEnableBase + (4 * i), v);
-}
-
-static inline void snd_hdspe_enable_out(struct hdspe * hdspe, int i, int v)
-{
-	hdspe_write(hdspe, HDSPE_outputEnableBase + (4 * i), v);
-}
-
 /* ------------------------------------------------------- */
 
 /*
@@ -372,7 +361,7 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 			hdspe_set_channel_dma_addr(hdspe, substream,
 						   HDSPE_pageAddressBufferOut,
 						   c);
-			snd_hdspe_enable_out(hdspe, c, 1);
+			hdspe_set_dma_out(hdspe, c, true);
 		}
 
 		hdspe->playback_buffer =
@@ -389,7 +378,7 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 			hdspe_set_channel_dma_addr(hdspe, substream,
 						   HDSPE_pageAddressBufferIn,
 						   c);
-			snd_hdspe_enable_in(hdspe, c, 1);
+			hdspe_set_dma_in(hdspe, c, true);
 		}
 
 		hdspe->capture_buffer =
@@ -432,12 +421,12 @@ static int snd_hdspe_hw_free(struct snd_pcm_substream *substream)
 		/* Just disable all channels. The saving when disabling a */
 		/* smaller set is not worth the trouble. */
 		for (i = 0; i < HDSPE_MAX_CHANNELS; ++i)
-			snd_hdspe_enable_out(hdspe, i, 0);
+			hdspe_set_dma_out(hdspe, i, false);
 
 		hdspe->playback_buffer = NULL;
 	} else {
 		for (i = 0; i < HDSPE_MAX_CHANNELS; ++i)
-			snd_hdspe_enable_in(hdspe, i, 0);
+			hdspe_set_dma_in(hdspe, i, false);
 
 		hdspe->capture_buffer = NULL;
 	}

@@ -315,6 +315,14 @@ static int hdspe_init(struct hdspe* hdspe)
 	hdspe->reg.control.common.LineOut = true;
 	hdspe_write_control(hdspe);
 
+	/* Disable all DMAs to avoid a warm reboot still holding state
+	 * left by the previous OS (e.g. Windows) causing noise on all
+	 * I/Os. DMA will be enabled later in snd_hdspe_prepare(). */
+	for (int i = 0; i < HDSPE_MAX_CHANNELS; i++) {
+		hdspe_set_dma_out(hdspe, i, false);
+		hdspe_set_dma_in(hdspe, i, false);
+	}
+
 	switch (hdspe->io_type) {
 	case HDSPE_MADI    :
 	case HDSPE_MADIFACE: hdspe_init_madi(hdspe); break;
@@ -539,6 +547,12 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	dev_dbg(card->dev, "remapped region (0x%lx) 0x%lx-0x%lx\n",
 			(unsigned long)hdspe->iobase, hdspe->port,
 			hdspe->port + io_extent - 1);
+
+	/* Stop any interrupts left running by the previous OS (e.g. Windows
+	 * leaves START=1 and its DMA buffers in the card's state).
+	 * Doing this as early as possible so the card doesn't have garbage
+	 * noise in its I/O */
+	hdspe_stop_interrupts(hdspe);
 
 	if (request_irq(pci->irq, snd_hdspe_interrupt,
 			IRQF_SHARED, KBUILD_MODNAME, hdspe)) {
