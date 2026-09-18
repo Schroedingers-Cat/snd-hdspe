@@ -18,6 +18,7 @@
 
 #include <linux/slab.h>
 #include <linux/bitfield.h>
+#include <linux/version.h>
 
 #ifdef DEBUG_LTC
 #define LTC_TIMER_FREQ 100
@@ -1492,7 +1493,11 @@ void hdspe_terminate_tco(struct hdspe* hdspe)
 		return;
 
 #ifdef DEBUG_LTC
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+	timer_delete_sync(&hdspe->tco_timer);
+#else
 	del_timer_sync(&hdspe->tco_timer);
+#endif
 #endif /*DEBUG_LTC*/
 
 	hdspe_tco_stop_timecode(hdspe);
