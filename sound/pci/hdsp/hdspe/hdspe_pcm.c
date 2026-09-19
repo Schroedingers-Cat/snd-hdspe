@@ -71,18 +71,6 @@ static void hdspe_set_channel_dma_addr(struct hdspe *hdspe,
 	}
 }
 
-/* ------------------------------------------------------- */
-
-/*
- * Returns true if the card is a RayDAT / AIO / AIO Pro 
- */
-static inline bool hdspe_is_raydat_or_aio(struct hdspe *hdspe)
-{
-	return ((HDSPE_AIO == hdspe->io_type) ||
-		(HDSPE_RAYDAT == hdspe->io_type) ||
-		(HDSPE_AIO_PRO == hdspe->io_type));
-}
-
 /* return period size in samples per period */
 u32 hdspe_period_size(struct hdspe *hdspe)
 {
@@ -266,7 +254,6 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 {
 	struct hdspe *hdspe = snd_pcm_substream_chip(substream);
 	int err;
-	int i;
 	pid_t this_pid;
 	pid_t other_pid;
 
@@ -349,43 +336,6 @@ static int snd_hdspe_hw_params(struct snd_pcm_substream *substream,
 		dev_err(hdspe->card->dev,
 			"err on snd_pcm_lib_malloc_pages: %d\n", err);
 		return err;
-	}
-
-	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		/* Enable only the required DMA channels. */
-		for (i = 0; i < params_channels(params); ++i) {
-			int c = hdspe->channel_map_out[i];
-
-			if (c < 0)
-				continue;      /* just make sure */
-			hdspe_set_channel_dma_addr(hdspe, substream,
-						   HDSPE_pageAddressBufferOut,
-						   c);
-			hdspe_set_dma_out(hdspe, c, true);
-		}
-
-		hdspe->playback_buffer =
-			(unsigned char *) substream->runtime->dma_area;
-		dev_dbg(hdspe->card->dev,
-			"Allocated sample buffer for playback at %p\n",
-				hdspe->playback_buffer);
-	} else {
-		for (i = 0; i < params_channels(params); ++i) {
-			int c = hdspe->channel_map_in[i];
-
-			if (c < 0)
-				continue;
-			hdspe_set_channel_dma_addr(hdspe, substream,
-						   HDSPE_pageAddressBufferIn,
-						   c);
-			hdspe_set_dma_in(hdspe, c, true);
-		}
-
-		hdspe->capture_buffer =
-			(unsigned char *) substream->runtime->dma_area;
-		dev_dbg(hdspe->card->dev,
-			"Allocated sample buffer for capture at %p\n",
-				hdspe->capture_buffer);
 	}
 
 	/*
@@ -514,6 +464,8 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	running = hdspe->running;
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
+	// Takashi Iwai's ALSA driver guide suggests to keep the RESUME case for compatibility even if the
+	// SNDRV_PCM_INFO_RESUME flag is not set.
 	case SNDRV_PCM_TRIGGER_RESUME:
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		running |= 1 << substream->stream;
@@ -562,7 +514,7 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	// Since we have audio interrupts enabled all the time, 
+	// Since we have audio interrupts enabled all the time,
 	// no explicit start or stop is necessary
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
@@ -575,6 +527,30 @@ _ok:
 
 static int snd_hdspe_prepare(struct snd_pcm_substream *substream)
 {
+	struct hdspe *hdspe = snd_pcm_substream_chip(substream);
+	const struct snd_pcm_runtime *runtime = substream->runtime;
+	const bool playback = substream->stream == SNDRV_PCM_STREAM_PLAYBACK;
+	const unsigned int reg = playback ? HDSPE_pageAddressBufferOut : HDSPE_pageAddressBufferIn;
+	const s8 *map = playback ? hdspe->channel_map_out : hdspe->channel_map_in;
+
+	/* Reprogram per-channel DMA addresses. Redundant after hw_params on initial setup, but required on resume from suspend where the FPGA has lost this state. */
+	for (int i = 0; i < runtime->channels; ++i) {
+		const int c = map[i];
+		if (c < 0)
+			continue;
+
+		hdspe_set_channel_dma_addr(hdspe, substream, reg, c);
+		if (playback)
+			hdspe_set_dma_out(hdspe, c, true);
+		else
+			hdspe_set_dma_in(hdspe, c, true);
+	}
+
+	if (playback)
+		hdspe->playback_buffer = (unsigned char *) runtime->dma_area;
+	else
+		hdspe->capture_buffer = (unsigned char *) runtime->dma_area;
+
 	return 0;
 }
 
@@ -583,7 +559,6 @@ static const struct snd_pcm_hardware snd_hdspe_playback_subinfo = {
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
 		 SNDRV_PCM_INFO_SYNC_START |
-		 SNDRV_PCM_INFO_RESUME |
 		 SNDRV_PCM_INFO_DOUBLE),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,	
@@ -610,8 +585,7 @@ static const struct snd_pcm_hardware snd_hdspe_capture_subinfo = {
 	.info = (SNDRV_PCM_INFO_MMAP |
 		 SNDRV_PCM_INFO_MMAP_VALID |
 		 SNDRV_PCM_INFO_NONINTERLEAVED |
-		 SNDRV_PCM_INFO_SYNC_START | 
-		 SNDRV_PCM_INFO_RESUME),
+		 SNDRV_PCM_INFO_SYNC_START),
 	.formats = SNDRV_PCM_FMTBIT_S32_LE,
 //	.formats = SNDRV_PCM_FMTBIT_FLOAT_LE,
 	.rates = (SNDRV_PCM_RATE_32000 |

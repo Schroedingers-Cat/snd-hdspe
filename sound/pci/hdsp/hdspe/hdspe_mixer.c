@@ -169,6 +169,19 @@ static void hdspe_clear_mixer(struct hdspe * hdspe, u16 sgain)
 		}	
 }
 
+/* Reapply all cached mixer volume values to hardware. */
+void hdspe_restore_mixer(struct hdspe *hdspe)
+{
+	for (unsigned int chan = 0; chan < HDSPE_MIXER_CHANNELS; chan++)
+	{
+		for (unsigned int in = 0; in < HDSPE_MIXER_CHANNELS; in++)
+			hdspe_write_in_gain(hdspe, chan, in, hdspe->mixer->ch[chan].in[in]);
+
+		for (unsigned int pb = 0; pb < HDSPE_MIXER_CHANNELS; pb++)
+			hdspe_write_pb_gain(hdspe, chan, pb, hdspe->mixer->ch[chan].pb[pb]);
+	}
+}
+
 #define HDSPE_MIXER(xname, xindex) \
 {	.iface = SNDRV_CTL_ELEM_IFACE_HWDEP, \
 	.name = xname, \

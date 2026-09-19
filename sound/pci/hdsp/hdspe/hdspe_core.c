@@ -221,14 +221,15 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
  * are enabled when the MIDI devices are created. */
 static void hdspe_start_interrupts(struct hdspe* hdspe)
 {
-	if (hdspe->tco) {
-		/* TCO MTC port is always the last one */
-		struct hdspe_midi *m = &hdspe->midi[hdspe->midiPorts-1];
-	
-		dev_dbg(hdspe->card->dev,
-			"%s: enabling TCO MTC input port %d '%s'.\n",
-			__func__, m->id, m->portname);
-		hdspe->reg.control.raw |= m->ie;	
+	/* Re-enable all MIDI interrupts for ports with open input */
+	for (int i = 0; i < hdspe->midiPorts; i++) {
+		if (hdspe->midi[i].input) {
+			dev_dbg(hdspe->card->dev,
+			        "%s: enabling MIDI input port %d '%s'.\n",
+			        __func__, hdspe->midi[i].id, hdspe->midi[i].portname);
+
+			hdspe->reg.control.raw |= hdspe->midi[i].ie;
+		}
 	}
 
 	hdspe->reg.control.common.START    = true;
@@ -280,15 +281,7 @@ static int snd_hdspe_create_alsa_devices(struct snd_card *card,
 	dev_dbg(card->dev, "Init proc interface...\n");
 	snd_hdspe_proc_init(hdspe);
 
-	dev_dbg(card->dev, "Initializing complete?\n");
-
-	err = snd_card_register(card);
-	if (err < 0) {
-		dev_err(card->dev, "error registering card.\n");
-		return err;
-	}
-	
-	dev_dbg(card->dev, "... yes now\n");
+	dev_dbg(card->dev, "Initializing done.\n");
 
 	return 0;
 }
@@ -632,6 +625,17 @@ static void hdspe_work_stop(struct hdspe *hdspe)
 		hdspe_stop_interrupts(hdspe);
 		cancel_work_sync(&hdspe->midi_work);
 		cancel_work_sync(&hdspe->status_work);
+
+		/* Stop all MIDI timers */
+		for (int i = 0; i < hdspe->midiPorts; i++) {
+			if (hdspe->midi[i].istimer) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+				timer_delete_sync(&hdspe->midi[i].timer);
+#else
+				del_timer_sync(&hdspe->midi[i].timer);
+#endif
+			}
+		}
 	}
 }
 
@@ -739,7 +743,7 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 		return -ENODEV;
 	}
 
-	dev_info(hdspe->card->dev, "HDSPe entering suspend state\n");
+	dev_dbg(hdspe->card->dev, "HDSPe entering suspend state\n");
 
 	/* (2) Change ALSA power state */
 	snd_power_change_state(card, SNDRV_CTL_POWER_D3hot);
@@ -748,18 +752,25 @@ static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t st
 	/* Save the necessary register values in hdspe struct */
 	spin_lock_irq(&hdspe->lock);
 	// without suspendStateRegs, it's 104e9 vs 104c8 for the control register -> because of the interrupts (START & IE_AUDIO)
-	hdspe->suspendStateRegs = hdspe->reg;
+	hdspe->suspendStateRegs.control = hdspe->reg.control;
+	hdspe->suspendStateRegs.pll_freq = hdspe->reg.pll_freq;
+	hdspe->suspendStateRegs.settings = hdspe->reg.settings;
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Stop hardware operations */
+	/* Suspend all active PCM streams */
+	snd_pcm_suspend_all(hdspe->pcm);
 	/* Stop interrupts and halt any ongoing operations */
 	hdspe_work_stop(hdspe);
 	// snd_hdspe_deinit_all(hdspe);
 
 	/* (5) Enter low-power state */
 	/* Place the hardware into a low-power mode, not sure if that is available for HDSPe? */
+	/* pci_save_state() is also handled by the PCI core's legacy PM code. Still keeping it to be explicit */
+	pci_save_state(dev);
+	pci_set_power_state(dev, PCI_D3hot);
 
-	dev_info(hdspe->card->dev, "HDSPe suspend complete\n");
+	dev_dbg(hdspe->card->dev, "HDSPe suspend complete\n");
 	return 0;
 }
 
@@ -776,24 +787,21 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 		return -ENODEV;
 	}
 
-	dev_info(hdspe->card->dev, "HDSPe entering resume state\n");
+	dev_dbg(hdspe->card->dev, "HDSPe entering resume state\n");
 
 	/* (2) Reinitialize the chip */
 	/* Perform any necessary reinitialization steps after resume */
-	/* Unclear what HDSPe needs to have reinitialized? */
-	/* Init all HDSPe things like TCO, methods, tables, registers ... */
-	hdspe_work_start(hdspe);
-
-
-	// int err;
-	// err = hdspe_init_all(hdspe);
-	// if (err < 0)
-	// 	return err;
+	/* pci_set_power_state() and pci_restore_state are also handled by the PCI core's legacy PM code.
+	 * Still keeping it to be explicit */
+	pci_set_power_state(dev, PCI_D0);
+	pci_restore_state(dev);
 
 	/* (3) Restore saved register values */
 	/* Restore the register values saved during suspend */
 	spin_lock_irq(&hdspe->lock);
-	hdspe->reg = hdspe->suspendStateRegs;
+	hdspe->reg.control = hdspe->suspendStateRegs.control;
+	hdspe->reg.pll_freq = hdspe->suspendStateRegs.pll_freq;
+	hdspe->reg.settings = hdspe->suspendStateRegs.settings;
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Update hardware with restored register values */
@@ -801,6 +809,9 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	hdspe_write_settings(hdspe);
 	hdspe_write_control(hdspe);
 	hdspe_write_pll_freq(hdspe);
+	hdspe_restore_mixer(hdspe);
+	if (hdspe->tco)
+		hdspe_tco_write_settings(hdspe);
 
 	/* (5) Restart the chip or hardware */
 	/* Restart any halted hardware or operations */
@@ -808,11 +819,17 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	// reg.control.common to true, which already happened via 
 	// hdspe->suspendStateRegs
 	hdspe_start_interrupts(hdspe);
+	/* Re-arm all MIDI timers that were stopped in snd_hdspe_suspend */
+	for (int i = 0; i < hdspe->midiPorts; i++) {
+		if (hdspe->midi[i].istimer) {
+			mod_timer(&hdspe->midi[i].timer, 1 + jiffies);
+		}
+	}
 
 	/* (6) Return ALSA to full power state */
 	snd_power_change_state(card, SNDRV_CTL_POWER_D0);
 
-	dev_info(&dev->dev, "HDSPe resume complete\n");
+	dev_dbg(&dev->dev, "HDSPe resume complete\n");
 	dev_dbg(&dev->dev, "HDSPe running status:%d\n", hdspe_is_running(hdspe));
 	return 0;
 }

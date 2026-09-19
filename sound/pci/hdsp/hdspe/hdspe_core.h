@@ -1014,6 +1014,17 @@ struct hdspe {
 	u32 period_size;            /* current period size, in nr of samples */
 };
 
+/* ------------------------------------------------------- */
+
+/*
+ * Returns true if the card is a RayDAT / AIO / AIO Pro
+ */
+static inline bool hdspe_is_raydat_or_aio(struct hdspe *hdspe)
+{
+	return ((HDSPE_AIO == hdspe->io_type) ||
+		(HDSPE_RAYDAT == hdspe->io_type) ||
+		(HDSPE_AIO_PRO == hdspe->io_type));
+}
 
 /**
  * Write/read to/from HDSPE with Adresses in Bytes
@@ -1048,7 +1059,8 @@ void hdspe_write_control(struct hdspe* hdspe)
 static inline __attribute__((always_inline))
 void hdspe_write_settings(struct hdspe* hdspe)
 {
-	hdspe_write(hdspe, HDSPE_WR_SETTINGS, hdspe->reg.settings.raw);
+	if(hdspe_is_raydat_or_aio(hdspe))
+		hdspe_write(hdspe, HDSPE_WR_SETTINGS, hdspe->reg.settings.raw);
 }
 
 static inline __attribute__((always_inline))
@@ -1250,6 +1262,8 @@ extern void hdspe_mixer_read_proc(struct snd_info_entry *entry,
 
 extern void hdspe_mixer_update_channel_map(struct hdspe* hdspe);
 
+extern void hdspe_restore_mixer(struct hdspe *hdspe);
+
 /**
  * hdspe_tco.c
  */
@@ -1277,6 +1291,10 @@ extern bool hdspe_tco_notify_status_change(struct hdspe* hdspe);
 
 /* Set "app" sample rate on TCO module, when sound card sample rate changes. */
 extern void hdspe_tco_set_app_sample_rate(struct hdspe* hdspe);
+
+/* Write settings to TCO module */
+extern void hdspe_tco_write_settings(struct hdspe* hdspe);
+
 
 /**
  * hdspe_common.c

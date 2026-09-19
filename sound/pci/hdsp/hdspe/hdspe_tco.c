@@ -388,7 +388,7 @@ void hdspe_tco_read_status(struct hdspe* hdspe, struct hdspe_tco_status* s)
         spin_unlock(&hdspe->tco->lock);
 }
 
-static void hdspe_tco_write_settings(struct hdspe* hdspe)
+void hdspe_tco_write_settings(struct hdspe* hdspe)
 {
 	static const int pullbits[HDSPE_PULL_COUNT] = {
 		0,
