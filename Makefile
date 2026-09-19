@@ -21,6 +21,12 @@ $(PACKAGE_NAME)-y := \
 	sound/pci/hdsp/hdspe/hdspe_tco.o \
 	sound/pci/hdsp/hdspe/hdspe_ltc_math.o
 
+# Get version info for embedding into driver logging
+VERSION_H := sound/pci/hdsp/hdspe/hdspe_version.h
+SRCDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+GIT_HASH := $(shell git -C $(SRCDIR) rev-parse --short HEAD 2>/dev/null || echo "unknown")
+GIT_DESCRIBE := $(shell git -C $(SRCDIR) describe --always --dirty 2>/dev/null || echo "unknown")
+
 # Add include path for header files
 ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
 
@@ -45,7 +51,31 @@ PWD := $(shell pwd)
 
 all: modules
 
-modules: dkms.conf
+# Generate header with version info (compatible with manual builds and DKMS builds)
+
+$(VERSION_H): FORCE
+	@mkdir -p $(dir $@)
+	@tmp="$@.tmp"; \
+	{ \
+	  echo '/* Auto-generated. Do not edit. */'; \
+	  echo '#ifndef _SND_HDSPE_VERSION_H_'; \
+	  echo '#define _SND_HDSPE_VERSION_H_'; \
+	  echo ''; \
+	  echo '#define SND_HDSPE_GIT_HASH "$(GIT_HASH)"'; \
+	  echo '#define SND_HDSPE_VERSION "$(GIT_DESCRIBE)"'; \
+	  echo ''; \
+	  echo '#endif /* _SND_HDSPE_VERSION_H_ */'; \
+	} > "$$tmp"; \
+	if [ -f "$@" ] && cmp -s "$$tmp" "$@"; then \
+	  rm -f "$$tmp"; \
+	else \
+	  mv -f "$$tmp" "$@"; \
+	fi
+
+.PHONY: FORCE
+FORCE:
+
+modules: dkms.conf $(VERSION_H)
 	$(MAKE) $(WFLAG) -C $(KDIR) M=$(PWD) modules
 
 dkms.conf: dkms.conf.in
