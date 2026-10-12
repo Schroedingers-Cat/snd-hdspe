@@ -643,11 +643,25 @@ static void snd_hdspe_remove(struct pci_dev *pci)
 	snd_card_free(pci_get_drvdata(pci));
 }
 
+static void snd_hdspe_shutdown(struct pci_dev *pci)
+{
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct hdspe *hdspe;
+
+	if (!card)
+		return;
+
+	hdspe = card->private_data;
+	hdspe_stop_interrupts(hdspe);
+	hdspe_disable_all_dma(hdspe);
+}
+
 static struct pci_driver hdspe_driver = {
 	.name = KBUILD_MODNAME,
 	.id_table = snd_hdspe_ids,
 	.probe = snd_hdspe_probe,
 	.remove = snd_hdspe_remove,
+	.shutdown = snd_hdspe_shutdown,
 };
 
 module_pci_driver(hdspe_driver);
