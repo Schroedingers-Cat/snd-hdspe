@@ -212,6 +212,14 @@ static void hdspe_stop_interrupts(struct hdspe* hdspe)
 	hdspe_write_control(hdspe);
 }
 
+static void hdspe_disable_all_dma(struct hdspe *hdspe)
+{
+	for (int i = 0; i < HDSPE_MAX_CHANNELS; i++) {
+		hdspe_set_dma_out(hdspe, i, false);
+		hdspe_set_dma_in(hdspe, i, false);
+	}
+}
+
 /* Create ALSA devices, after hardware initialization */
 static int snd_hdspe_create_alsa_devices(struct snd_card *card,
 					 struct hdspe *hdspe)
@@ -281,10 +289,7 @@ static int hdspe_init(struct hdspe* hdspe)
 	/* Disable all DMAs to avoid a warm reboot still holding state
 	 * left by the previous OS (e.g. Windows) causing noise on all
 	 * I/Os. DMA will be enabled later in snd_hdspe_prepare(). */
-	for (int i = 0; i < HDSPE_MAX_CHANNELS; i++) {
-		hdspe_set_dma_out(hdspe, i, false);
-		hdspe_set_dma_in(hdspe, i, false);
-	}
+	hdspe_disable_all_dma(hdspe);
 
 	switch (hdspe->io_type) {
 	case HDSPE_MADI    :
