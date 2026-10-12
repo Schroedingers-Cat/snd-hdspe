@@ -318,6 +318,14 @@ static void hdspe_stop_interrupts(struct hdspe* hdspe)
 	dev_dbg(hdspe->card->dev, "Interrupts have been stopped\n");
 }
 
+static void hdspe_disable_all_dma(struct hdspe *hdspe)
+{
+	for (int i = 0; i < HDSPE_MAX_CHANNELS; i++) {
+		hdspe_set_dma_out(hdspe, i, false);
+		hdspe_set_dma_in(hdspe, i, false);
+	}
+}
+
 /* Create ALSA devices, after hardware initialization */
 static int snd_hdspe_create_alsa_devices(struct snd_card *card,
 					 struct hdspe *hdspe)
@@ -379,10 +387,7 @@ static int hdspe_init(struct hdspe* hdspe)
 	/* Disable all DMAs to avoid a warm reboot still holding state
 	 * left by the previous OS (e.g. Windows) causing noise on all
 	 * I/Os. DMA will be enabled later in snd_hdspe_prepare(). */
-	for (int i = 0; i < HDSPE_MAX_CHANNELS; i++) {
-		hdspe_set_dma_out(hdspe, i, false);
-		hdspe_set_dma_in(hdspe, i, false);
-	}
+	hdspe_disable_all_dma(hdspe);
 
 	switch (hdspe->io_type) {
 	case HDSPE_MADI    :
@@ -807,6 +812,19 @@ static void snd_hdspe_remove(struct pci_dev *pci)
 	snd_card_free(pci_get_drvdata(pci));
 }
 
+static void snd_hdspe_shutdown(struct pci_dev *pci)
+{
+	struct snd_card *card = pci_get_drvdata(pci);
+	struct hdspe *hdspe;
+
+	if (!card)
+		return;
+
+	hdspe = card->private_data;
+	hdspe_stop_interrupts(hdspe);
+	hdspe_disable_all_dma(hdspe);
+}
+
 static int __maybe_unused snd_hdspe_suspend(struct pci_dev *dev, pm_message_t state)
 {
 	/* (1) Accessing HDSPe data */
@@ -911,12 +929,12 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	return 0;
 }
 
-
 static struct pci_driver hdspe_driver = {
 	.name = KBUILD_MODNAME,
 	.id_table = snd_hdspe_ids,
 	.probe = snd_hdspe_probe,
 	.remove = snd_hdspe_remove,
+	.shutdown = snd_hdspe_shutdown,
 #ifdef CONFIG_PM
 	.suspend = snd_hdspe_suspend,
 	.resume = snd_hdspe_resume,
