@@ -269,6 +269,88 @@ static int snd_hdspe_put_mixer(struct snd_kcontrol *kcontrol,
 	return change;
 }
 
+/* Expose the full hardware mixer as matrix mixer, so alsactl can
+   control the complete mixer state.
+*/
+#define HDSPE_MIXER_MATRIX_VALUES (2 * HDSPE_MIXER_CHANNELS)
+
+static int snd_hdspe_info_matrix_mixer(struct snd_kcontrol *kcontrol,
+                                       struct snd_ctl_elem_info *uinfo)
+{
+	uinfo->type  = SNDRV_CTL_ELEM_TYPE_INTEGER;
+	uinfo->count = HDSPE_MIXER_MATRIX_VALUES;
+	uinfo->value.integer.min = 0;
+	uinfo->value.integer.max = 65535;
+	uinfo->value.integer.step = 1;
+	return 0;
+}
+
+static int snd_hdspe_get_matrix_mixer(struct snd_kcontrol *kcontrol,
+                                      struct snd_ctl_elem_value *ucontrol)
+{
+	struct hdspe *hdspe = snd_kcontrol_chip(kcontrol);
+	unsigned int destination = snd_ctl_get_ioff(kcontrol, &ucontrol->id);
+	unsigned int source;
+
+	spin_lock_irq(&hdspe->lock);
+	for (source = 0; source < HDSPE_MIXER_CHANNELS; source++) {
+		ucontrol->value.integer.value[source] =
+				hdspe_read_in_gain(hdspe, destination, source);
+		ucontrol->value.integer.value[HDSPE_MIXER_CHANNELS + source] =
+				hdspe_read_pb_gain(hdspe, destination, source);
+	}
+	spin_unlock_irq(&hdspe->lock);
+
+	return 0;
+}
+
+static int snd_hdspe_put_matrix_mixer(struct snd_kcontrol *kcontrol,
+                                      struct snd_ctl_elem_value *ucontrol)
+{
+	struct hdspe *hdspe = snd_kcontrol_chip(kcontrol);
+	unsigned int destination = snd_ctl_get_ioff(kcontrol, &ucontrol->id);
+	unsigned int source;
+	const long *val = ucontrol->value.integer.value;
+	int change = 0;
+
+	if (!snd_hdspe_use_is_exclusive(hdspe))
+		return -EBUSY;
+
+	for (source = 0; source < HDSPE_MIXER_MATRIX_VALUES; source++)
+		if (val[source] < 0 || val[source] > 65535)
+			return -EINVAL;
+
+	spin_lock_irq(&hdspe->lock);
+	for (source = 0; source < HDSPE_MIXER_CHANNELS; source++) {
+		const long in = val[source];
+		const long pb = val[HDSPE_MIXER_CHANNELS + source];
+
+		if (in != hdspe_read_in_gain(hdspe, destination, source) ||
+		    !hdspe->mixer_known[destination].in[source]) {
+			hdspe_write_in_gain(hdspe, destination, source, in);
+			change = 1;
+		}
+		if (pb != hdspe_read_pb_gain(hdspe, destination, source) ||
+		    !hdspe->mixer_known[destination].pb[source]) {
+			hdspe_write_pb_gain(hdspe, destination, source, pb);
+			change = 1;
+		}
+	}
+	spin_unlock_irq(&hdspe->lock);
+
+	return change;
+}
+
+static const struct snd_kcontrol_new snd_hdspe_matrix_mixer = {
+	.iface  = SNDRV_CTL_ELEM_IFACE_HWDEP,
+	.name   = "Matrix Mixer",
+	.access = SNDRV_CTL_ELEM_ACCESS_READWRITE | SNDRV_CTL_ELEM_ACCESS_VOLATILE,
+	.count  = HDSPE_MIXER_CHANNELS,
+	.info   = snd_hdspe_info_matrix_mixer,
+	.get    = snd_hdspe_get_matrix_mixer,
+	.put    = snd_hdspe_put_matrix_mixer
+};
+
 /* The simple mixer control(s) provide gain control for the
    basic 1:1 mappings of playback streams to output
    streams.
@@ -393,6 +475,10 @@ int hdspe_create_mixer_controls(struct hdspe* hdspe)
 
 	err = hdspe_add_controls(hdspe, ARRAY_SIZE(snd_hdspe_controls_mixer),
 				 snd_hdspe_controls_mixer);
+	if (err < 0)
+		return err;
+
+	err = hdspe_add_controls(hdspe, 1, &snd_hdspe_matrix_mixer);
 	if (err < 0)
 		return err;
 
