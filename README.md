@@ -116,13 +116,13 @@ First, compile the driver with the debug flags:
       make clean
       make debug
 
-Then, install/reinstall the driver:  
+Then, install/reinstall the driver (temporarily until reboot:  
 ```
 # Stopping some services first may be required on modern Distros like Fedora 44
 systemctl --user stop pipewire pipewire-pulse wireplumber
 sudo systemctl stop alsa-state.service 
 
-# Then, uninstall and install the driver
+# Then, uninstall and install the driver (only until reboot)
 sudo rmmod snd_hdspe
 sudo insmod ./snd-hdspe.ko
 
