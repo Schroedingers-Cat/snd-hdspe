@@ -1247,8 +1247,6 @@ extern int hdspe_update_simple_mixer_controls(struct hdspe * hdspe);
 extern void hdspe_mixer_read_proc(struct snd_info_entry *entry,
 				  struct snd_info_buffer *buffer);
 
-extern void hdspe_mixer_update_channel_map(struct hdspe* hdspe);
-
 extern void hdspe_restore_mixer(struct hdspe *hdspe);
 
 /**

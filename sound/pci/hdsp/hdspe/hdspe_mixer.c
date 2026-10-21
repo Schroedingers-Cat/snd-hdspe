@@ -99,74 +99,6 @@ void hdspe_mixer_read_proc(struct snd_info_entry *entry,
 	}
 }
 
-void hdspe_mixer_update_channel_map(struct hdspe* hdspe)
-{
-	int i, j;
-	bool used[HDSPE_MAX_CHANNELS];
-
-	dev_dbg(hdspe->card->dev, "%s:\n", __func__);
-	
-	/* mute all unused playback channels */
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		used[i] = false;
-	}
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		int c = hdspe->channel_map_out[i];
-		used[c] = true;
-	}
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		if (!used[i]) {
-			for (j = 0; j < HDSPE_MIXER_CHANNELS; j ++) {
-				hdspe_write_in_gain(hdspe, i, j, 0);
-				hdspe_write_pb_gain(hdspe, i, j, 0);
-			}
-		} else {
-#ifdef DAW_MODE
-			hdspe_write_pb_gain(hdspe, i, i, HDSPE_UNITY_GAIN);
-#endif /*DAW_MODE*/
-		}
-	}
-	
-	/* mute all unused capture channels */
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		used[i] = false;
-	}
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {
-		int c = hdspe->channel_map_in[i];
-		used[c] = true;
-	}
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i ++) {	
-		if (!used[i]) {
-			for (j = 0; j < HDSPE_MIXER_CHANNELS; j ++) {
-				hdspe_write_in_gain(hdspe, j, i, 0);
-			}
-		} else {
-#ifdef PASSTHROUGH_MODE
-			hdspe_write_in_gain(hdspe, i, i, HDSPE_UNITY_GAIN);
-#endif /*PASSTHROUGH_MODE*/
-		}		
-	}
-}
-
-static void hdspe_clear_mixer(struct hdspe * hdspe, u16 sgain)
-{
-	int i, j;
-	unsigned int gain;
-
-	if (sgain > HDSPE_UNITY_GAIN)
-		gain = HDSPE_UNITY_GAIN;
-	else if (sgain < 0)
-		gain = 0;
-	else
-		gain = sgain;
-
-	for (i = 0; i < HDSPE_MIXER_CHANNELS; i++)
-		for (j = 0; j < HDSPE_MIXER_CHANNELS; j++) {
-			hdspe_write_in_gain(hdspe, i, j, gain);
-			hdspe_write_pb_gain(hdspe, i, j, gain);
-		}	
-}
-
 /* Reapply all cached mixer volume values to hardware. */
 void hdspe_restore_mixer(struct hdspe *hdspe)
 {
@@ -434,7 +366,8 @@ int hdspe_init_mixer(struct hdspe* hdspe)
 	if (!hdspe->mixer)
 		return -ENOMEM;
 	
-	hdspe_clear_mixer(hdspe, 0 * HDSPE_UNITY_GAIN);
+	// Do not clear the mixer volume values. On Windows, the driver does not touch those. The userspace tool
+	// TotalMix handles that. This allows all routing to continue to exist after a reboot.
 	
 	return 0;
 }
