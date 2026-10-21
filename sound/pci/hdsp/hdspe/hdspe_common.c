@@ -399,7 +399,7 @@ void hdspe_set_channel_map(struct hdspe* hdspe, enum hdspe_speed speed)
 		break;
 
 	default: {}
-	};
+	}
 
 	hdspe_mixer_update_channel_map(hdspe);
 }
