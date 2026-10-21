@@ -909,6 +909,11 @@ struct hdspe_ctl_ids {
   /*	struct snd_ctl_elem_id* wck_out_rate; */
 };
 
+struct hdspe_channel_known {
+	bool in[HDSPE_MIXER_CHANNELS];
+	bool pb[HDSPE_MIXER_CHANNELS];
+};
+
 struct hdspe {
 	struct pci_dev *pci;	     /* pci info */
 	int vendor_id;               /* PCI vendor ID: Xilinx or RME */
@@ -964,6 +969,8 @@ struct hdspe {
 	/* Mixer vars */
 	/* full mixer accessible over mixer ioctl or hwdep-device */
 	struct hdspe_mixer *mixer;
+	/* The mixer values we know (have been written at least once) */
+	struct hdspe_channel_known mixer_known[HDSPE_MIXER_CHANNELS];
 	struct hdspe_peak_rms peak_rms;
 	/* fast alsa mixer */
 	struct snd_kcontrol *playback_mixer_ctls[HDSPE_MAX_CHANNELS];
@@ -1259,8 +1266,6 @@ extern int hdspe_update_simple_mixer_controls(struct hdspe * hdspe);
 
 extern void hdspe_mixer_read_proc(struct snd_info_entry *entry,
 				  struct snd_info_buffer *buffer);
-
-extern void hdspe_mixer_update_channel_map(struct hdspe* hdspe);
 
 extern void hdspe_restore_mixer(struct hdspe *hdspe);
 

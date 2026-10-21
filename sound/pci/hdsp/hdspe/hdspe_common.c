@@ -399,9 +399,9 @@ void hdspe_set_channel_map(struct hdspe* hdspe, enum hdspe_speed speed)
 		break;
 
 	default: {}
-	};
+	}
 
-	hdspe_mixer_update_channel_map(hdspe);
+	// Do not clear the mixer volume values. See hdspe_mixer.c, hdspe_init_mixer().
 }
 
 int hdspe_set_sample_rate(struct hdspe * hdspe, u32 desired_rate)
