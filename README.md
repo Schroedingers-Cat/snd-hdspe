@@ -116,7 +116,19 @@ First, compile the driver with the debug flags:
       make clean
       make debug
 
-Then, install/reinstall the driver. This will enable debug messages via `/proc` like `/proc/asound/{devicename}/debug`.
+Then, install/reinstall the driver:  
+```
+# Stopping some services first may be required on modern Distros like Fedora 44
+systemctl --user stop pipewire pipewire-pulse wireplumber
+sudo systemctl stop alsa-state.service 
+
+# Then, uninstall and install the driver
+sudo rmmod snd_hdspe
+sudo insmod ./snd-hdspe.ko
+
+# Start the services via systemctl if you stopped them previously   
+```
+This will enable debug messages via `/proc` like `/proc/asound/{devicename}/debug`.
 
 To enable debug logging in the kernel via `dmesg`:
 
