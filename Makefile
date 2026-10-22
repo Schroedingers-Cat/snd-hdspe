@@ -24,8 +24,15 @@ $(PACKAGE_NAME)-y := \
 # Get version info for embedding into driver logging
 VERSION_H := sound/pci/hdsp/hdspe/hdspe_version.h
 SRCDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
-GIT_HASH := $(shell git -C $(SRCDIR) rev-parse --short HEAD 2>/dev/null || echo "unknown")
-GIT_DESCRIBE := $(shell git -C $(SRCDIR) describe --always --dirty 2>/dev/null || echo "unknown")
+GIT_HASH := $(shell git -C $(SRCDIR) rev-parse --short HEAD 2>/dev/null)
+GIT_DESCRIBE := $(shell git -C $(SRCDIR) describe --always --dirty 2>/dev/null)
+ifeq ($(GIT_HASH),)
+GIT_HASH := unknown
+GIT_DESCRIBE := unknown
+GIT_AVAILABLE := 0
+else
+GIT_AVAILABLE := 1
+endif
 
 # Add include path for header files
 ccflags-y += -I$(src)/sound/pci/hdsp/hdspe
@@ -55,7 +62,8 @@ all: modules
 
 $(VERSION_H): FORCE
 	@mkdir -p $(dir $@)
-	@tmp="$@.tmp"; \
+	@if [ "$(GIT_AVAILABLE)" = 0 ] && [ -f "$@" ]; then exit 0; fi; \
+	tmp="$@.tmp"; \
 	{ \
 	  echo '/* Auto-generated. Do not edit. */'; \
 	  echo '#ifndef _SND_HDSPE_VERSION_H_'; \

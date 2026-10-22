@@ -527,11 +527,11 @@ _ok:
 	// Since we have audio interrupts enabled all the time,
 	// no explicit start or stop is necessary
 	if (!hdspe->running && running) {
-		dev_info(hdspe->card->dev, "Audio streaming started: %s, period=%u, rate=%u, irq_count=%d\n",
+		dev_dbg(hdspe->card->dev, "Audio streaming started: %s, period=%u, rate=%u, irq_count=%d\n",
 		         substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture", hdspe->period_size,
 		         hdspe_read_system_sample_rate(hdspe), hdspe->irq_count);
 	} else if (hdspe->running && !running) {
-		dev_info(hdspe->card->dev, "Audio streaming stopped: irq_count=%d\n", hdspe->irq_count);
+		dev_dbg(hdspe->card->dev, "Audio streaming stopped: irq_count=%d\n", hdspe->irq_count);
 	}
 	hdspe->running = running;
 	spin_unlock(&hdspe->lock);
