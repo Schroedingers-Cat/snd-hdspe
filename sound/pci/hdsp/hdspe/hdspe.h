@@ -859,7 +859,7 @@ struct hdspe_card_info {
 };
 
 #define SNDRV_HDSPE_IOCTL_GET_CARD_INFO \
-	_IOR('H', 0x45, struct hdspe_status)
+	_IOR('H', 0x45, struct hdspe_card_info)
 
 
 /* ------------- Matrix Mixer IOCTL --------------- */
