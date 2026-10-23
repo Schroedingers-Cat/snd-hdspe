@@ -747,11 +747,13 @@ static void hdspe_deinit_all(struct hdspe *hdspe)
 
 static int snd_hdspe_free(struct hdspe * hdspe)
 {
-	hdspe_work_stop(hdspe);
+	if (hdspe->port)
+		hdspe_stop_interrupts(hdspe);
 
 	if (hdspe->irq >= 0)
 		free_irq(hdspe->irq, (void *) hdspe);
 
+	hdspe_work_stop(hdspe);
 	hdspe_deinit_all(hdspe);
 
 	if (hdspe->iobase)
