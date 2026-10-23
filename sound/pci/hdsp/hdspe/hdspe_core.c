@@ -263,6 +263,8 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 		}
 		#endif /*TIME_INTERRUPT_INTERVAL*/
 
+		spin_lock(&hdspe->lock);
+
 		schedule = 0;
 		for (i = 0; i < hdspe->midiPorts; i++) {
 			if ((hdspe_read(hdspe,
@@ -280,6 +282,8 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 			hdspe_write_control(hdspe);
 			queue_work(system_highpri_wq, &hdspe->midi_work);
 		}
+
+		spin_unlock(&hdspe->lock);
 	}
 	
 	return IRQ_HANDLED;
@@ -289,6 +293,9 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
  * are enabled when the MIDI devices are created. */
 static void hdspe_start_interrupts(struct hdspe* hdspe)
 {
+	unsigned long flags;
+	spin_lock_irqsave(&hdspe->lock, flags);
+
 	/* Re-enable all MIDI interrupts for ports with open input */
 	for (int i = 0; i < hdspe->midiPorts; i++) {
 		if (hdspe->midi[i].input) {
@@ -305,10 +312,15 @@ static void hdspe_start_interrupts(struct hdspe* hdspe)
 
 	hdspe_write_control(hdspe);
 	dev_dbg(hdspe->card->dev, "Interrupts have been started\n");
+
+	spin_unlock_irqrestore(&hdspe->lock, flags);
 }
 
 static void hdspe_stop_interrupts(struct hdspe* hdspe)
 {
+	unsigned long flags;
+	spin_lock_irqsave(&hdspe->lock, flags);
+
 	/* stop the audio, and cancel all interrupts */
 	hdspe->reg.control.common.START    = false;
 	hdspe->reg.control.common.IE_AUDIO = false;
@@ -316,6 +328,8 @@ static void hdspe_stop_interrupts(struct hdspe* hdspe)
 
 	hdspe_write_control(hdspe);
 	dev_dbg(hdspe->card->dev, "Interrupts have been stopped\n");
+
+	spin_unlock_irqrestore(&hdspe->lock, flags);
 }
 
 static void hdspe_disable_all_dma(struct hdspe *hdspe)
