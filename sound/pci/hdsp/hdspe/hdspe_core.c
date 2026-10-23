@@ -643,17 +643,6 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	 * noise in its I/O */
 	hdspe_stop_interrupts(hdspe);
 
-	if (request_irq(pci->irq, snd_hdspe_interrupt,
-			IRQF_SHARED, KBUILD_MODNAME, hdspe)) {
-		dev_err(card->dev, "unable to use IRQ %d\n", pci->irq);
-		return -EBUSY;
-	}
-
-	dev_dbg(card->dev, "use IRQ %d\n", pci->irq);
-
-	hdspe->irq = pci->irq;
-	card->sync_irq = hdspe->irq;
-
 	/* Firmware build */
 	hdspe->fw_build = le32_to_cpu(hdspe_read(hdspe, HDSPE_RD_FLASH)) >> 12;
 	dev_dbg(card->dev, "firmware build %d\n", hdspe->fw_build);
@@ -689,6 +678,17 @@ static int snd_hdspe_create(struct hdspe *hdspe)
 	err = hdspe_init_all(hdspe);
 	if (err < 0)
 		return err;
+
+	if (request_irq(pci->irq, snd_hdspe_interrupt,
+	                IRQF_SHARED, KBUILD_MODNAME, hdspe)) {
+		dev_err(card->dev, "unable to use IRQ %d\n", pci->irq);
+		return -EBUSY;
+	}
+
+	dev_dbg(card->dev, "use IRQ %d\n", pci->irq);
+
+	hdspe->irq = pci->irq;
+	card->sync_irq = hdspe->irq;
 
 	/* Create ALSA devices */
 	err = snd_hdspe_create_alsa_devices(card, hdspe);
