@@ -378,14 +378,14 @@ static void hdspe_tco_copy_control(struct hdspe* hdspe,
 
 void hdspe_tco_read_status(struct hdspe* hdspe, struct hdspe_tco_status* s)
 {
-        spin_lock(&hdspe->tco->lock);
+	spin_lock_irq(&hdspe->tco->lock);
 	s->version = HDSPE_VERSION;
 	s->fw_version = hdspe->tco->fw_version;
 	s->ltc_in = hdspe_read_tco(hdspe, 0);
 	hdspe_tco_read_status1(hdspe, s);
 	hdspe_tco_read_status2(hdspe, s);
 	hdspe_tco_copy_control(hdspe, s);
-        spin_unlock(&hdspe->tco->lock);
+	spin_unlock_irq(&hdspe->tco->lock);
 }
 
 void hdspe_tco_write_settings(struct hdspe* hdspe)
