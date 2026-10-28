@@ -10,9 +10,8 @@
  * and hardware kindly made available by Amptec Belgium (www.amptec.be).
  */
 
-/* TODO: undefine in production version */
-#define DEBUG
-#define CONFIG_SND_DEBUG
+/* DEBUG and CONFIG_SND_DEBUG are set from the Makefile:
+ * make DEBUG=1 CONFIG_SND_DEBUG=1 */
 //#define TIME_INTERRUPT_INTERVAL
 #define DAW_MODE
 //#define PASSTHROUGH_MODE
