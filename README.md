@@ -32,6 +32,14 @@ On ubuntu:
      
 This builds the snd-hdspe.ko kernel driver in the sound/pci/hdsp/hdspe subdirectory.
 
+- You can speed up compilation by spreading the work across your available cores:
+
+       make -j$(nproc)
+
+  To enable that for your current shell session instead:
+
+       export MAKEFLAGS=-j$(nproc)
+
 - You may need to blacklist the stock snd-hdspm driver as this driver targets the same devices. Create a file /usr/lib/modprobe.d/hdspe.conf with the following content:
 
         blacklist snd-hdspm
