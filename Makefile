@@ -7,7 +7,11 @@ endif
 
 KDIR    ?= /lib/modules/${KERNELRELEASE}/build
 PWD     := $(shell pwd)
-EXTRA_CFLAGS += -DDEBUG -DCONFIG_SND_DEBUG
+# Debug output is opt-in: make DEBUG=1 CONFIG_SND_DEBUG=1
+DEBUG ?= 0
+CONFIG_SND_DEBUG ?= 0
+EXTRA_CFLAGS += $(if $(filter 1,$(DEBUG)),-DDEBUG,)
+EXTRA_CFLAGS += $(if $(filter 1,$(CONFIG_SND_DEBUG)),-DCONFIG_SND_DEBUG,)
 
 # Force to build the module as loadable kernel module.
 # Keep in mind that this configuration sound be in 'sound/pci/Kconfig' when upstreaming.
