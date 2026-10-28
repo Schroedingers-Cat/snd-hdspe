@@ -159,11 +159,17 @@ static int hdspe_set_interrupt_interval(struct hdspe *hdspe, unsigned int frames
 	return 0;
 }
 
-/* Return hardware buffer pointer in samples (always 4 bytes) */
+/* Return hardware buffer pointer in samples (always 4 bytes).
+ * Reads the status register live: the copy cached by the interrupt
+ * handler is only refreshed once per period, which breaks timer based
+ * scheduling (e.g. PipeWire) that queries the position between interrupts.
+ * The cached copy is left untouched for the interrupt handler. */
 snd_pcm_uframes_t hdspe_hw_pointer(struct hdspe *hdspe)
 {
+	union hdspe_status0_reg status0 = hdspe_read_status0_nocache(hdspe);
+
 	/* (BUF_PTR << 6) bytes / 4 bytes per sample */
-	return ((le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)) << 4)
+	return ((le16_to_cpu(status0.common.BUF_PTR)) << 4)
 		& (hdspe->hw_buffer_size - 1);
 }
 
