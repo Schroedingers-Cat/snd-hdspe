@@ -129,7 +129,28 @@ int hdspe_control_put(struct snd_kcontrol *kcontrol, int val,
 
 /* -------------- status polling ------------------- */
 
-HDSPE_RW_INT1_HDSPE_METHODS(status_polling, 0, HZ, 1)
+HDSPE_GETTER(status_polling)
+
+/* The kcontrol putter. Callers must held hdspe->lock. */
+static int hdspe_put_status_polling_locked(struct hdspe *hdspe, const int value)
+{
+	const int changed = value != hdspe->status_polling;
+	hdspe->status_polling = value;
+	hdspe_update_audio_interrupts(hdspe);
+	return changed;
+}
+
+HDSPE_RW_INT1_METHODS(status_polling, 0, HZ, 1, hdspe_get_status_polling,
+					  hdspe_put_status_polling_locked, false)
+
+/* Variant of hdspe_put_status_polling_locked when the caller doesn't hold hdspe->lock. */
+static int hdspe_put_status_polling(struct hdspe *hdspe, const int value)
+{
+	spin_lock_irq(&hdspe->lock);
+	const int changed = hdspe_put_status_polling_locked(hdspe, value);
+	spin_unlock_irq(&hdspe->lock);
+	return changed;
+}
 
 void hdspe_status_work(struct work_struct *work)
 {
@@ -198,7 +219,8 @@ void hdspe_status_work(struct work_struct *work)
 
 	if (changed) {
 		hdspe->last_status_change_jiffies = 0;
-		hdspe->status_polling = 0; /* disable - user must re-enable */
+		/* User must re-enable */
+		hdspe_put_status_polling(hdspe, 0);
 		HDSPE_CTL_NOTIFY(status_polling);
 	} else if (jiffies > hdspe->last_status_change_jiffies + 2*HZ) {
 		dev_dbg(hdspe->card->dev,
@@ -206,7 +228,8 @@ void hdspe_status_work(struct work_struct *work)
 			jiffies, hdspe->last_status_change_jiffies,
 			jiffies - hdspe->last_status_change_jiffies, 2*HZ);
 		hdspe->last_status_change_jiffies = 0;
-		hdspe->status_polling = 0; /* disable - user must re-enable */
+		/* User must re-enable */
+		hdspe_put_status_polling(hdspe, 0);
 		HDSPE_CTL_NOTIFY(status_polling);
 	}
 }

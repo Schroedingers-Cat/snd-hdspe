@@ -524,8 +524,6 @@ static int snd_hdspe_trigger(struct snd_pcm_substream *substream, int cmd)
 	}
 _ok:
 	snd_pcm_trigger_done(substream, substream);
-	// Since we have audio interrupts enabled all the time,
-	// no explicit start or stop is necessary
 	if (!hdspe->running && running) {
 		dev_dbg(hdspe->card->dev, "Audio streaming started: %s, period=%u, rate=%u, irq_count=%d\n",
 		         substream->stream == SNDRV_PCM_STREAM_PLAYBACK ? "playback" : "capture", hdspe->period_size,
@@ -534,6 +532,7 @@ _ok:
 		dev_dbg(hdspe->card->dev, "Audio streaming stopped: irq_count=%d\n", hdspe->irq_count);
 	}
 	hdspe->running = running;
+	hdspe_update_audio_interrupts(hdspe);
 	spin_unlock(&hdspe->lock);
 
 	snd_ctl_notify(hdspe->card, SNDRV_CTL_EVENT_MASK_VALUE,

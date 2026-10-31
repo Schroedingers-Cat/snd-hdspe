@@ -285,26 +285,22 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-/* Start audio and TCO MTC interrupts. Other MIDI interrupts
- * are enabled when the MIDI devices are created. */
-static void hdspe_start_interrupts(struct hdspe* hdspe)
+void hdspe_update_audio_interrupts(struct hdspe* hdspe)
 {
-	/* Re-enable all MIDI interrupts for ports with open input */
-	for (int i = 0; i < hdspe->midiPorts; i++) {
-		if (hdspe->midi[i].input) {
-			dev_dbg(hdspe->card->dev,
-			        "%s: enabling MIDI input port %d '%s'.\n",
-			        __func__, hdspe->midi[i].id, hdspe->midi[i].portname);
+	const bool enable_irq = hdspe->running
+							|| hdspe->status_polling
+							|| hdspe->tco;
+	if (enable_irq == hdspe_is_running(hdspe))
+		return;
 
-			hdspe->reg.control.raw |= hdspe->midi[i].ie;
-		}
-	}
-
-	hdspe->reg.control.common.START    = true;
-	hdspe->reg.control.common.IE_AUDIO = true;
-
+	hdspe->reg.control.common.START    = enable_irq;
+	hdspe->reg.control.common.IE_AUDIO = enable_irq;
 	hdspe_write_control(hdspe);
-	dev_dbg(hdspe->card->dev, "Interrupts have been started\n");
+
+	if (enable_irq)
+		hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
+
+	dev_dbg(hdspe->card->dev, "Interrupts wanted: %s\n", enable_irq ? "yes" : "no");
 }
 
 static void hdspe_stop_interrupts(struct hdspe* hdspe)
@@ -798,8 +794,10 @@ static int snd_hdspe_probe(struct pci_dev *pci,
 
 	dev++;
 
-	hdspe_start_interrupts(hdspe);
-	
+	spin_lock_irq(&hdspe->lock);
+	hdspe_update_audio_interrupts(hdspe);
+	spin_unlock_irq(&hdspe->lock);
+
 	return 0;
 
 free_card:
@@ -897,6 +895,15 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 	hdspe->reg.control = hdspe->suspendStateRegs.control;
 	hdspe->reg.pll_freq = hdspe->suspendStateRegs.pll_freq;
 	hdspe->reg.settings = hdspe->suspendStateRegs.settings;
+	/* Audio interrupts are restarted below if needed */
+	hdspe->reg.control.common.START = 0;
+	hdspe->reg.control.common.IE_AUDIO = 0;
+	/* Re-enable MIDI interrupts for any port with an open input */
+	for (size_t i = 0; i < hdspe->midiPorts; i++) {
+		if (hdspe->midi[i].input) {
+			hdspe->reg.control.raw |= hdspe->midi[i].ie;
+		}
+	}
 	spin_unlock_irq(&hdspe->lock);
 
 	/* (4) Update hardware with restored register values */
@@ -909,11 +916,9 @@ static int __maybe_unused snd_hdspe_resume(struct pci_dev *dev)
 		hdspe_tco_write_settings(hdspe);
 
 	/* (5) Restart the chip or hardware */
-	/* Restart any halted hardware or operations */
-	// Technically, this redundantly sets START and IE_AUDIO in
-	// reg.control.common to true, which already happened via
-	// hdspe->suspendStateRegs
-	hdspe_start_interrupts(hdspe);
+	spin_lock_irq(&hdspe->lock);
+	hdspe_update_audio_interrupts(hdspe);
+	spin_unlock_irq(&hdspe->lock);
 	/* Re-arm all MIDI timers that were stopped in snd_hdspe_suspend */
 	for (int i = 0; i < hdspe->midiPorts; i++) {
 		if (hdspe->midi[i].istimer) {

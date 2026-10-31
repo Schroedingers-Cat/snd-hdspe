@@ -1247,6 +1247,12 @@ extern int hdspe_add_control_id(struct hdspe* hdspe,
 
 extern void hdspe_status_work(struct work_struct* work);
 
+/* Start/stop audio and TCO MTC interrupts on demand (PCM stream,
+ * status polling, TCO). MIDI interrupts are enabled when the
+ * MIDI devices are created. Caller needs to hold hdspe->lock
+ */
+extern void hdspe_update_audio_interrupts(struct hdspe *hdspe);
+
 #define HDSPE_CTL_NOTIFY(prop)					\
 	snd_ctl_notify(hdspe->card, SNDRV_CTL_EVENT_MASK_VALUE, \
 		       hdspe->cid.prop);
