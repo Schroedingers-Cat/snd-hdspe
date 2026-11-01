@@ -300,7 +300,7 @@ void hdspe_update_audio_interrupts(struct hdspe* hdspe)
 	if (enable_irq)
 		hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
 
-	dev_dbg(hdspe->card->dev, "Interrupts wanted: %s\n", enable_irq ? "yes" : "no");
+	dev_info(hdspe->card->dev, "Interrupts wanted: %s\n", enable_irq ? "yes" : "no");
 }
 
 static void hdspe_stop_interrupts(struct hdspe* hdspe)
