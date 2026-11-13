@@ -32,7 +32,7 @@ On ubuntu:
      
 This builds the snd-hdspe.ko kernel driver in the sound/pci/hdsp/hdspe subdirectory.
 
-- You may need to blacklist the stock `snd_hdspm` driver as this driver targets the same devices. Create a file /usr/lib/modprobe.d/hdspe.conf with the following content:
+- You may need to blacklist the stock `snd_hdspm` driver as this driver targets the same devices. Create a file /etc/modprobe.d/hdspe.conf with the following content:
 
         blacklist snd_hdspm
 
