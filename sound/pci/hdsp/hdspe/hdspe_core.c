@@ -399,8 +399,10 @@ static int hdspe_init(struct hdspe* hdspe)
 	default            : snd_BUG();
 	}
 
-	hdspe_read_status0_nocache(hdspe);          // init reg.status0
-	hdspe_write_internal_pitch(hdspe, 1000000); // init reg.pll_freq
+	// init reg.status0
+	hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
+	// init reg.pll_freq
+	hdspe_write_internal_pitch(hdspe, 1000000);
 
 	// Set the channel map according the initial speed mode */
 	hdspe_set_channel_map(hdspe, hdspe_speed_mode(hdspe));
