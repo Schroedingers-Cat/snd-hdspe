@@ -37,7 +37,7 @@
 
 			meta = with lib; {
 				description = "ALSA driver for RME HDSPe MADI/AES/RayDAT/AIO/AIO Pro cards";
-				homepage = "https://github.com/Sotem/snd-hdspe";
+				homepage = "https://github.com/Schroedingers-Cat/snd-hdspe";
 				license = licenses.gpl2;
 				platforms = platforms.linux;
 			};              
