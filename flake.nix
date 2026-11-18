@@ -6,24 +6,31 @@
 	let
 		system = "x86_64-linux";
 		pkgs = nixpkgs.legacyPackages.${system};
-		
+		lib = pkgs.lib;
+
+		# Extract PACKAGE_VERSION from Makefile
+		version =
+			let
+				lines = lib.splitString "\n" (builtins.readFile ./Makefile);
+				versionLine = lib.findFirst
+					(line: lib.hasPrefix "PACKAGE_VERSION" line)
+					(throw "PACKAGE_VERSION not found in Makefile")
+					lines;
+			in
+			lib.removePrefix "PACKAGE_VERSION := " versionLine;
+
 		snd-hdspe = {
 			lib,
 			stdenv,
 			kernel,
-			python3,
 		}:
 		stdenv.mkDerivation {
 			pname = "snd-hdspe";
-			version = "1.0.4";
+			inherit version;
 
 			src = self;
 
 			hardeningDisable = [ "all" ];
-
-			nativeBuildInputs = kernel.moduleBuildDependencies ++ [
-				python3
-			];
 
 			makeFlags = [
 				"KDIR=${kernel.dev}/lib/modules/${kernel.modDirVersion}/build"
