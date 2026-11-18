@@ -20,4 +20,7 @@ sound/pci/hdsp/hdspe/hdspe_version.h
 # IDE files
 .idea/
 .vscode/
+
+# Nix build output
+/result
 compile_commands.json
