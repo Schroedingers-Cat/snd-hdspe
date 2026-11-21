@@ -49,7 +49,11 @@
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	  /* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	  /* ID for this card */
 static bool enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;/* Enable this card */
-bool hdspe_enable_float = true;
+/* Native 32-bit float (bit 25 FloatFmt) is disabled by default: measured on
+ * RayDAT firmware 210, asserting bit 25 halves the hardware IRQ rate (e.g.
+ * 1024-sample period triggers at 2048-sample intervals) and breaks 32-sample
+ * periods. Opt-in via enable_float=1 for cards/firmwares verified to support it. */
+bool hdspe_enable_float = false;
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for RME HDSPE interface.");
@@ -61,7 +65,7 @@ module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable/disable specific HDSPE soundcards.");
 
 module_param_named(enable_float, hdspe_enable_float, bool, 0444);
-MODULE_PARM_DESC(enable_float, "Enable native 32-bit float hardware format (default: true).");
+MODULE_PARM_DESC(enable_float, "Enable experimental native 32-bit float format (default: false; breaks IRQ cadence on RayDAT fw 210).");
 
 
 MODULE_AUTHOR
