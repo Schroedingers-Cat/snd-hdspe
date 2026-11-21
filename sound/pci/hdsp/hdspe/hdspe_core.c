@@ -49,6 +49,7 @@
 static int index[SNDRV_CARDS] = SNDRV_DEFAULT_IDX;	  /* Index 0-MAX */
 static char *id[SNDRV_CARDS] = SNDRV_DEFAULT_STR;	  /* ID for this card */
 static bool enable[SNDRV_CARDS] = SNDRV_DEFAULT_ENABLE_PNP;/* Enable this card */
+bool hdspe_enable_float = true;
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for RME HDSPE interface.");
@@ -58,6 +59,9 @@ MODULE_PARM_DESC(id, "ID string for RME HDSPE interface.");
 
 module_param_array(enable, bool, NULL, 0444);
 MODULE_PARM_DESC(enable, "Enable/disable specific HDSPE soundcards.");
+
+module_param_named(enable_float, hdspe_enable_float, bool, 0444);
+MODULE_PARM_DESC(enable_float, "Enable native 32-bit float hardware format (default: true).");
 
 
 MODULE_AUTHOR
@@ -103,29 +107,64 @@ static const struct pci_device_id snd_hdspe_ids[] = {
 MODULE_DEVICE_TABLE(pci, snd_hdspe_ids);
 
 
+/* Update hardware audio IRQ enable (IE_AUDIO) according to active users.
+ * Caller must hold hdspe->lock. START stays asserted so the DMA ring buffer
+ * and hardware mixer keep running glitch-free; IE_AUDIO is only enabled when
+ * a running stream needs period wakeups, TCO is present, or status polling
+ * is active (NO_PERIOD_WAKEUP offload for timer-based schedulers). */
+void hdspe_update_audio_irq(struct hdspe *hdspe)
+{
+	bool want_irq = false;
+
+	if (hdspe->tco || hdspe->status_polling > 0)
+		want_irq = true;
+	else if ((hdspe->running & (1 << SNDRV_PCM_STREAM_CAPTURE)) &&
+		 hdspe->capture_substream &&
+		 hdspe->capture_substream->runtime &&
+		 !hdspe->capture_substream->runtime->no_period_wakeup)
+		want_irq = true;
+	else if ((hdspe->running & (1 << SNDRV_PCM_STREAM_PLAYBACK)) &&
+		 hdspe->playback_substream &&
+		 hdspe->playback_substream->runtime &&
+		 !hdspe->playback_substream->runtime->no_period_wakeup)
+		want_irq = true;
+
+	if (hdspe->reg.control.common.IE_AUDIO != want_irq) {
+		if (want_irq)
+			hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
+		hdspe->reg.control.common.IE_AUDIO = want_irq;
+		hdspe_write_control(hdspe);
+	}
+}
+
 /* interrupt handler */
 static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 {
 	struct hdspe *hdspe = (struct hdspe *) dev_id;
+	union hdspe_status0_reg status0;
+	struct snd_pcm_substream *cap_sub = NULL;
+	struct snd_pcm_substream *play_sub = NULL;
+	unsigned long flags;
+	bool sched_status = false;
 	int i, audio, midi, schedule = 0;
 
-	hdspe->reg.status0 = hdspe_read_status0_nocache(hdspe);
+	status0 = hdspe_read_status0_nocache(hdspe);
 
-	audio = hdspe->reg.status0.common.IRQ;
-	midi = hdspe->reg.status0.raw & hdspe->midiIRQPendingMask;
+	audio = status0.common.IRQ;
+	midi = status0.raw & hdspe->midiIRQPendingMask;
 
 #ifdef TIME_INTERRUPT_INTERVAL
 	u64 now = ktime_get_raw_fast_ns();
 	dev_dbg(hdspe->card->dev, "snd_hdspe_interrupt %llu us LAT=%d BUF_ID=%u BUF_PTR=%05u %s%s%s%s%s\n",
 		(now - hdspe->last_interrupt_time) / 1000,
 		hdspe->reg.control.common.LAT,
-		hdspe->reg.status0.common.BUF_ID,
-		le16_to_cpu(hdspe->reg.status0.common.BUF_PTR)<<6,
+		status0.common.BUF_ID,
+		(le32_to_cpu(status0.raw) & 0xFFC0U),
 		audio ? "AUDIO " : "",
-		hdspe->midiPorts>0 && (hdspe->reg.status0.raw & hdspe->midi[0].irq) ? "MIDI1 " : "",
-		hdspe->midiPorts>1 && (hdspe->reg.status0.raw & hdspe->midi[1].irq) ? "MIDI2 " : "",
-		hdspe->midiPorts>2 && (hdspe->reg.status0.raw & hdspe->midi[2].irq) ? "MIDI3 " : "",
-		hdspe->midiPorts>3 && (hdspe->reg.status0.raw & hdspe->midi[3].irq) ? "MIDI4 " : ""
+		hdspe->midiPorts>0 && (status0.raw & hdspe->midi[0].irq) ? "MIDI1 " : "",
+		hdspe->midiPorts>1 && (status0.raw & hdspe->midi[1].irq) ? "MIDI2 " : "",
+		hdspe->midiPorts>2 && (status0.raw & hdspe->midi[2].irq) ? "MIDI3 " : "",
+		hdspe->midiPorts>3 && (status0.raw & hdspe->midi[3].irq) ? "MIDI4 " : ""
 		);
 	hdspe->last_interrupt_time = now;
 #endif /*TIME_INTERRUPT_INTERVAL*/
@@ -135,9 +174,32 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 
 	if (audio) {
 		hdspe_write(hdspe, HDSPE_interruptConfirmation, 0);
+
+		spin_lock_irqsave(&hdspe->lock, flags);
+		hdspe->reg.status0 = status0;
 		hdspe->irq_count++;
-		
 		hdspe_update_frame_count(hdspe);
+
+		if ((hdspe->running & (1 << SNDRV_PCM_STREAM_CAPTURE)) &&
+		    hdspe->capture_substream &&
+		    hdspe->capture_substream->runtime &&
+		    !hdspe->capture_substream->runtime->no_period_wakeup)
+			cap_sub = hdspe->capture_substream;
+
+		if ((hdspe->running & (1 << SNDRV_PCM_STREAM_PLAYBACK)) &&
+		    hdspe->playback_substream &&
+		    hdspe->playback_substream->runtime &&
+		    !hdspe->playback_substream->runtime->no_period_wakeup)
+			play_sub = hdspe->playback_substream;
+
+		/* status polling at user controlled rate */
+		if (hdspe->status_polling > 0 &&
+		    time_after_eq(jiffies, hdspe->last_status_jiffies
+				  + HZ / hdspe->status_polling)) {
+			hdspe->last_status_jiffies = jiffies;
+			sched_status = true;
+		}
+		spin_unlock_irqrestore(&hdspe->lock, flags);
 
 		if (hdspe->tco) {
 			/* LTC In update must happen before user
@@ -145,27 +207,24 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 			hdspe_tco_period_elapsed(hdspe);
 		}
 
-		if (hdspe->capture_substream)
-			snd_pcm_period_elapsed(hdspe->capture_substream);
+		if (cap_sub)
+			snd_pcm_period_elapsed(cap_sub);
 
-		if (hdspe->playback_substream)
-			snd_pcm_period_elapsed(hdspe->playback_substream);
+		if (play_sub)
+			snd_pcm_period_elapsed(play_sub);
 
-		/* status polling at user controlled rate */
-		if (hdspe->status_polling > 0 &&
-		    jiffies >= hdspe->last_status_jiffies
-		    + HZ/hdspe->status_polling) {
-			hdspe->last_status_jiffies = jiffies;
+		if (sched_status)
 			schedule_work(&hdspe->status_work);
-		}
 	}
 
 	if (midi) {
+		spin_lock_irqsave(&hdspe->lock, flags);
+		hdspe->reg.status0 = status0;
 		schedule = 0;
 		for (i = 0; i < hdspe->midiPorts; i++) {
 			if ((hdspe_read(hdspe,
 					hdspe->midi[i].statusIn) & 0xff) &&
-			    (hdspe->reg.status0.raw & hdspe->midi[i].irq)) {
+			    (status0.raw & hdspe->midi[i].irq)) {
 				/* we disable interrupts for this input until
 				 * processing is done */
 				hdspe->reg.control.raw &= ~hdspe->midi[i].ie;
@@ -174,19 +233,24 @@ static irqreturn_t snd_hdspe_interrupt(int irq, void *dev_id)
 			}
 		}
 
-		if (schedule) {
+		if (schedule)
 			hdspe_write_control(hdspe);
+		spin_unlock_irqrestore(&hdspe->lock, flags);
+
+		if (schedule)
 			queue_work(system_highpri_wq, &hdspe->midi_work);
-		}
 	}
 	
 	return IRQ_HANDLED;
 }
 
-/* Start audio and TCO MTC interrupts. Other MIDI interrupts
- * are enabled when the MIDI devices are created. */
+/* Start audio engine and TCO MTC interrupts. Audio period IRQs (IE_AUDIO)
+ * are gated dynamically by hdspe_update_audio_irq(). */
 static void hdspe_start_interrupts(struct hdspe* hdspe)
 {
+	unsigned long flags;
+
+	spin_lock_irqsave(&hdspe->lock, flags);
 	if (hdspe->tco) {
 		/* TCO MTC port is always the last one */
 		struct hdspe_midi *m = &hdspe->midi[hdspe->midiPorts-1];
@@ -197,10 +261,10 @@ static void hdspe_start_interrupts(struct hdspe* hdspe)
 		hdspe->reg.control.raw |= m->ie;	
 	}
 
-	hdspe->reg.control.common.START =
-	hdspe->reg.control.common.IE_AUDIO = true;
-
+	hdspe->reg.control.common.START = true;
+	hdspe->reg.control.common.IE_AUDIO = (hdspe->tco != NULL);
 	hdspe_write_control(hdspe);
+	spin_unlock_irqrestore(&hdspe->lock, flags);
 }
 
 static void hdspe_stop_interrupts(struct hdspe* hdspe)
@@ -265,7 +329,9 @@ static int hdspe_init(struct hdspe* hdspe)
 	hdspe->capture_substream = hdspe->playback_substream = NULL;
 	hdspe->capture_buffer = hdspe->playback_buffer = NULL;
 	hdspe->capture_pid = hdspe->playback_pid = -1;
-	hdspe->running = false;
+	hdspe->running = 0;
+	hdspe->active_format = 0;
+	hdspe->format_streams = 0;
 	hdspe->irq_count = 0;
 
 	// Initialize hardware registers and their cache, card_name, methods,

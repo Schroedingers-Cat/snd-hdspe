@@ -129,7 +129,18 @@ int hdspe_control_put(struct snd_kcontrol *kcontrol, int val,
 
 /* -------------- status polling ------------------- */
 
-HDSPE_RW_INT1_HDSPE_METHODS(status_polling, 0, HZ, 1)
+HDSPE_GETTER(status_polling)
+
+static int hdspe_put_status_polling(struct hdspe *hdspe, int val)
+{
+	hdspe->status_polling = val;
+	hdspe_update_audio_irq(hdspe);
+	return 0;
+}
+
+HDSPE_RW_INT1_METHODS(status_polling, 0, HZ, 1,
+		      hdspe_get_status_polling,
+		      hdspe_put_status_polling, false)
 
 void hdspe_status_work(struct work_struct *work)
 {
@@ -198,15 +209,21 @@ void hdspe_status_work(struct work_struct *work)
 
 	if (changed) {
 		hdspe->last_status_change_jiffies = 0;
+		spin_lock_irq(&hdspe->lock);
 		hdspe->status_polling = 0; /* disable - user must re-enable */
+		hdspe_update_audio_irq(hdspe);
+		spin_unlock_irq(&hdspe->lock);
 		HDSPE_CTL_NOTIFY(status_polling);
-	} else if (jiffies > hdspe->last_status_change_jiffies + 2*HZ) {
+	} else if (time_after(jiffies, hdspe->last_status_change_jiffies + 2*HZ)) {
 		dev_dbg(hdspe->card->dev,
 			"%s: polling timeout expired: jiffies=%lu, last_status_change_jiffied=%lu, delta=%ld, 2*HZ=%d.\n", __func__,
 			jiffies, hdspe->last_status_change_jiffies,
 			jiffies - hdspe->last_status_change_jiffies, 2*HZ);
 		hdspe->last_status_change_jiffies = 0;
+		spin_lock_irq(&hdspe->lock);
 		hdspe->status_polling = 0; /* disable - user must re-enable */
+		hdspe_update_audio_irq(hdspe);
+		spin_unlock_irq(&hdspe->lock);
 		HDSPE_CTL_NOTIFY(status_polling);
 	}
 }

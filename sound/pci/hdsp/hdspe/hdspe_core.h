@@ -25,6 +25,7 @@
 #include <sound/core.h>
 #include <sound/control.h>
 #include <sound/info.h>
+#include <sound/pcm.h>
 
 // #define HDSPE_HDSP_REV  60  //  HDSPe PCIe/ExpressCard
 #define HDSPE_MADI_REV		210  // TODO: use
@@ -990,8 +991,10 @@ struct hdspe {
 	unsigned char *capture_buffer;	/* suitably aligned address */
 
 	pid_t capture_pid;	     /* process id which uses capture */
-	pid_t playback_pid;	     /* process id which uses capture */
+	pid_t playback_pid;	     /* process id which uses playback */
 	int running;		     /* running status */
+	snd_pcm_format_t active_format; /* active PCM format (FloatFmt is global) */
+	int format_streams;	     /* bitmask of streams with hw_params set */
 
         spinlock_t lock;
 	int irq_count;		     /* for debug */
@@ -1112,6 +1115,12 @@ u32 hdspe_read_pll_freq(struct hdspe* hdspe)
 	return le32_to_cpu(hdspe_read(hdspe, HDSPE_RD_PLL_FREQ));
 }
 
+
+/**
+ * hdspe_core.c
+ */
+extern bool hdspe_enable_float;
+extern void hdspe_update_audio_irq(struct hdspe *hdspe);
 
 /**
  * hdspe_pcm.c
